@@ -1,4 +1,6 @@
-#include <QtCore/QCoreApplication>
+#include <QtGui/QApplication>
+#include "mainwindow.h"
+
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/core/core.hpp>
 
@@ -15,9 +17,15 @@ IplImage* skipNFrames(CvCapture* capture, int n)
     return cvQueryFrame(capture);
 }
 
-
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
+//    zakomentowane tymczasowo - nie usuwać!
+//    QApplication a(argc, argv);
+//    MainWindow w;
+//    w.show();
+    
+//    return a.exec();
+
     CvCapture* capture = cvCaptureFromFile("../Sample/mis.mp4");
 
     IplImage* frame = NULL;
