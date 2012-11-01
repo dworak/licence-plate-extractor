@@ -1,21 +1,21 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2012-10-31T17:58:47
+# Project created by QtCreator 2012-11-01T20:04:50
 #
 #-------------------------------------------------
 
-QT       += core
+QT       += core gui
 
-QT       -= gui
-
-TARGET = opencv_test
-CONFIG   += console
-CONFIG   -= app_bundle
-
+TARGET = LicensePlateExtractor
 TEMPLATE = app
 
 
-SOURCES += main.cpp
+SOURCES += main.cpp\
+        mainwindow.cpp
+
+HEADERS  += mainwindow.h
+
+FORMS    += mainwindow.ui
 
 INCLUDEPATH += C:/opencv_build/install/include
 
