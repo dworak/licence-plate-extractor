@@ -19,8 +19,9 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
-INCLUDEPATH += C:/opencv_build/install/include
+INCLUDEPATH += D:/Programing/OpenCV/Build/install/include
 
-LIBS += -L"C:/opencv_build/install/lib" \
+LIBS += -L"D:/Programing/OpenCV/Build/install/lib" \
         -lopencv_core231 \
         -lopencv_highgui231 \
+        -lopencv_imgproc231 \
