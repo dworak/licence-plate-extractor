@@ -25,3 +25,6 @@ LIBS += -L$$(OPENCVPATH)/lib \
         -lopencv_core231 \
         -lopencv_highgui231 \
         -lopencv_imgproc231
+
+RESOURCES += \
+    resources.qrc

@@ -21,17 +21,62 @@ public:
     
 private slots:
     void nextFrame();
-    void on_actionPlay_triggered();
-    void on_actionPause_triggered();
 
     void on_rightView_customContextMenuRequested(const QPoint &pos);
 
     void on_leftView_customContextMenuRequested(const QPoint &pos);
 
+    void on_playPause_clicked();
+
+    void on_frameDelay_valueChanged(int arg1);
+
+    void on_sobelAperture_valueChanged(int arg1);
+
+    void on_sobelXorder_valueChanged(int arg1);
+
+    void on_sobelYorder_valueChanged(int arg1);
+
+    void on_sobelThreshold_valueChanged(int arg1);
+
+    void on_gaussW_valueChanged(int arg1);
+
+    void on_gaussH_valueChanged(int arg1);
+
+    void on_mfM_valueChanged(int arg1);
+
+    void on_mfN_valueChanged(int arg1);
+
+    void on_mfA_valueChanged(double arg1);
+
+    void on_mfB_valueChanged(double arg1);
+
+    void on_mfVariance_valueChanged(double arg1);
+
+    void on_mfThreshold_valueChanged(int arg1);
+
 private:
     Ui::MainWindow *ui;
     CvCapture* capture;
+    IplImage* frame;
     QTimer *timer;
+
+    // parameters
+    bool playing;
+    int frameDelay;
+
+    int sobelXorder;
+    int sobelYorder;
+    int sobelAperture;
+    int sobelThresholdParam;
+    int gaussW;
+    int gaussH;
+    int mfM;
+    int mfN;
+    double mfVariance;
+    double mfA;
+    double mfB;
+    int mfThreshold;
+
 
     QImage *original;
     QImage *grayScale;
@@ -48,6 +93,10 @@ private:
     void updateLeftView();
     void updateRightView();
     void updateBothViews();
+
+    void processCurrentFrame();
+    void processFromGrayScale();
+    void processFromSobel();
 };
 
 #endif // MAINWINDOW_H
