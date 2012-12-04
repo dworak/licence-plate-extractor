@@ -75,7 +75,7 @@ void MainWindow::nextFrame()
 {
     frame = skipNFrames(capture, 0);
 
-    if( frame != NULL ){
+    if(frame != NULL){
         processCurrentFrame();
     }
     else
@@ -83,6 +83,7 @@ void MainWindow::nextFrame()
         timer->stop();
         ui->leftView->clear();
         ui->rightView->clear();
+        ui->playPause->setIcon(QIcon(":/icon/play"));
     }
 }
 
@@ -206,64 +207,66 @@ void MainWindow::updateBothViews()
 
 void MainWindow::processCurrentFrame()
 {
-    if(original != NULL){
-        delete original;
-        delete grayScale;
-        delete sobel;
-        delete sobelThreshold;
-        delete gauss;
-        delete matchFilter;
-        delete matchFilterThreshold;
+    if(frame != NULL){
+        if(original != NULL){
+            delete original;
+            delete grayScale;
+            delete sobel;
+            delete sobelThreshold;
+            delete gauss;
+            delete matchFilter;
+            delete matchFilterThreshold;
+        }
+
+        // original
+        original = Utils::IplImage2QImage(frame);
+
+        // gray scale
+        IplImage *grayscale = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
+        cvCvtColor(frame,grayscale,CV_RGB2GRAY);
+        grayScale = Utils::IplImage2QImage(grayscale);
+
+        // sobel
+        IplImage *sobeled = cvCreateImage(cvGetSize(frame),IPL_DEPTH_16S,1);
+        IplImage *sobeled2 = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
+        IplImage *sobeled3 = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
+        cvSobel(grayscale,sobeled,sobelXorder,sobelYorder,sobelAperture);
+        cvConvertScale(sobeled,sobeled2,1./256,0);
+        sobel = Utils::IplImage2QImage(sobeled2);
+
+        // sobel threshold
+        cvThreshold(sobeled2,sobeled3,sobelThresholdParam,255,CV_THRESH_BINARY);
+        sobelThreshold = Utils::IplImage2QImage(sobeled3);
+
+        // gauss
+        Mat mtx(sobeled3);
+        IplImage *gaussipl = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
+        Mat mtx2(gaussipl);
+        GaussianBlur(mtx,mtx2,cvSize(gaussW,gaussH),0,0);
+        gauss = Utils::IplImage2QImage(gaussipl);
+
+        // match filter
+        Mat mf1(gaussipl);
+        IplImage *mf = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
+        Mat mf2(mf);
+        filter2D(mf1, mf2, -1, Utils::getMatchFilterKernel(mfM, mfN, mfVariance, mfA, mfB));
+        matchFilter = Utils::IplImage2QImage(mf);
+
+        // match filter threshold
+        IplImage *mft = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
+        cvThreshold(mf,mft,mfThreshold,255,CV_THRESH_BINARY);
+        matchFilterThreshold = Utils::IplImage2QImage(mft);
+
+        cvReleaseImage(&grayscale);
+        cvReleaseImage(&sobeled);
+        cvReleaseImage(&sobeled2);
+        cvReleaseImage(&sobeled3);
+        cvReleaseImage(&gaussipl);
+        cvReleaseImage(&mf);
+        cvReleaseImage(&mft);
+
+        updateBothViews();
     }
-
-    // original
-    original = Utils::IplImage2QImage(frame);
-
-    // gray scale
-    IplImage *grayscale = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
-    cvCvtColor(frame,grayscale,CV_RGB2GRAY);
-    grayScale = Utils::IplImage2QImage(grayscale);
-
-    // sobel
-    IplImage *sobeled = cvCreateImage(cvGetSize(frame),IPL_DEPTH_16S,1);
-    IplImage *sobeled2 = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
-    IplImage *sobeled3 = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
-    cvSobel(grayscale,sobeled,sobelXorder,sobelYorder,sobelAperture);
-    sobel = Utils::IplImage2QImage(sobeled);
-
-    // sobel threshold
-    cvConvertScale(sobeled,sobeled2,1./256,0);
-    cvThreshold(sobeled2,sobeled3,sobelThresholdParam,255,CV_THRESH_BINARY);
-    sobelThreshold = Utils::IplImage2QImage(sobeled3);
-
-    // gauss
-    Mat mtx(sobeled3);
-    IplImage *gaussipl = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
-    Mat mtx2(gaussipl);
-    GaussianBlur(mtx,mtx2,cvSize(gaussW,gaussH),0,0);
-    gauss = Utils::IplImage2QImage(gaussipl);
-
-    // match filter
-    Mat mf1(gaussipl);
-    IplImage *mf = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
-    Mat mf2(mf);
-    filter2D(mf1, mf2, -1, Utils::getMatchFilterKernel(mfM, mfN, mfVariance, mfA, mfB));
-    matchFilter = Utils::IplImage2QImage(mf);
-
-    // match filter threshold
-    IplImage *mft = cvCreateImage(cvGetSize(frame),IPL_DEPTH_8U,1);
-    cvThreshold(mf,mft,mfThreshold,255,CV_THRESH_BINARY);
-    matchFilterThreshold = Utils::IplImage2QImage(mft);
-
-    cvReleaseImage(&grayscale);
-    cvReleaseImage(&sobeled);
-    cvReleaseImage(&sobeled2);
-    cvReleaseImage(&sobeled3);
-    cvReleaseImage(&gaussipl);
-    cvReleaseImage(&mf);
-    cvReleaseImage(&mft);
-
-    updateBothViews();
 }
 
 void MainWindow::on_playPause_clicked()
@@ -296,14 +299,24 @@ void MainWindow::on_sobelAperture_valueChanged(int arg1)
 
 void MainWindow::on_sobelXorder_valueChanged(int arg1)
 {
-    sobelXorder = arg1;
-    processCurrentFrame();
+    if(arg1 == 0)
+        ui->sobelYorder->setMinimum(1);
+    else{
+        sobelXorder = arg1;
+        ui->sobelYorder->setMinimum(0);
+        processCurrentFrame();
+    }
 }
 
 void MainWindow::on_sobelYorder_valueChanged(int arg1)
 {
-    sobelYorder = arg1;
-    processCurrentFrame();
+    if(arg1 == 0)
+        ui->sobelXorder->setMinimum(1);
+    else{
+        sobelYorder = arg1;
+        ui->sobelXorder->setMinimum(0);
+        processCurrentFrame();
+    }
 }
 
 void MainWindow::on_sobelThreshold_valueChanged(int arg1)
