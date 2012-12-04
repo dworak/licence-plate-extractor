@@ -95,8 +95,6 @@ private:
     void updateBothViews();
 
     void processCurrentFrame();
-    void processFromGrayScale();
-    void processFromSobel();
 };
 
 #endif // MAINWINDOW_H

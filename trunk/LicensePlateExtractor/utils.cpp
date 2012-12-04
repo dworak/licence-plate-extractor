@@ -38,14 +38,31 @@ QImage *Utils::IplImage2QImage(IplImage *iplImg)
 
 cv::Mat Utils::getMatchFilterKernel(int m, int n, double variance, double A, double B)
 {
+//    double kernel[m][n];
+//    for(int x=0; x<m; x++){
+//        double val;
+//        if(x < m / 3 || x > 2 * m / 3)
+//            val = A * exp(- x * x / (0.2 * variance));
+//        else
+//            val = B * exp(- x * x / (2 * variance));
+//        qDebug() << "mfKernel";
+//        for(int y=0; y<n; y++)
+//            kernel[x][y] = val;
+//    }
+//    return cv::Mat(m, n, CV_64F, kernel);
+
     double kernel[m][n];
     for(int x=0; x<m; x++){
         double val;
-        if(x < m / 3 || x > 2 * m / 3)
-            val = A * exp(- x * x / (0.2 * variance));
-        else
-            val = B * exp(- x * x / (2 * variance));
-        qDebug() << "mfKernel";
+        if(x < m / 3 || x > 2 * m / 3){
+            double trans = x < m / 3 ? (double)m / 4 : (double)m / 4 * 3;
+            double xTrans = x - trans;
+            val = A * exp(- xTrans * xTrans / (0.2 * variance));
+        }
+        else{
+            double xTrans = x - (double)m / 2;
+            val = B * exp(- xTrans * xTrans / (2 * variance));
+        }
         for(int y=0; y<n; y++)
             kernel[x][y] = val;
     }

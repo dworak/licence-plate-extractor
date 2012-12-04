@@ -121,11 +121,14 @@
           </item>
           <item row="0" column="1">
            <widget class="QSpinBox" name="sobelXorder">
+            <property name="minimum">
+             <number>1</number>
+            </property>
             <property name="maximum">
              <number>4</number>
             </property>
             <property name="value">
-             <number>2</number>
+             <number>3</number>
             </property>
            </widget>
           </item>
@@ -138,6 +141,9 @@
           </item>
           <item row="1" column="1">
            <widget class="QSpinBox" name="sobelYorder">
+            <property name="minimum">
+             <number>0</number>
+            </property>
             <property name="maximum">
              <number>4</number>
             </property>
@@ -156,7 +162,7 @@
           <item row="2" column="1">
            <widget class="QSpinBox" name="sobelAperture">
             <property name="minimum">
-             <number>1</number>
+             <number>3</number>
             </property>
             <property name="maximum">
              <number>7</number>
@@ -165,7 +171,7 @@
              <number>2</number>
             </property>
             <property name="value">
-             <number>5</number>
+             <number>7</number>
             </property>
            </widget>
           </item>
@@ -191,7 +197,7 @@
              <number>255</number>
             </property>
             <property name="value">
-             <number>3</number>
+             <number>8</number>
             </property>
            </widget>
           </item>
@@ -249,7 +255,7 @@
              <number>2</number>
             </property>
             <property name="value">
-             <number>5</number>
+             <number>7</number>
             </property>
            </widget>
           </item>
@@ -274,7 +280,7 @@
              <double>-0.001000000000000</double>
             </property>
             <property name="value">
-             <double>-1.000000000000000</double>
+             <double>-5.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -298,7 +304,7 @@
              <number>1</number>
             </property>
             <property name="value">
-             <number>2</number>
+             <number>4</number>
             </property>
            </widget>
           </item>
@@ -330,6 +336,9 @@
             <property name="minimum">
              <number>1</number>
             </property>
+            <property name="value">
+             <number>10</number>
+            </property>
            </widget>
           </item>
           <item row="1" column="0">
@@ -352,7 +361,7 @@
              <number>3</number>
             </property>
             <property name="value">
-             <double>10.000000000000000</double>
+             <double>8.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -376,6 +385,12 @@
            <widget class="QSpinBox" name="mfThreshold">
             <property name="maximum">
              <number>255</number>
+            </property>
+            <property name="singleStep">
+             <number>10</number>
+            </property>
+            <property name="value">
+             <number>70</number>
             </property>
            </widget>
           </item>
