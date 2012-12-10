@@ -115,6 +115,7 @@ MainWindow::View MainWindow::showViewContextMenu(const QPoint &pos)
     menu.addAction("Gaussian blur");
     menu.addAction("Match Filter");
     menu.addAction("Threshold after MF");
+    menu.addAction("Locate Plates");
 
     QAction* selectedItem = menu.exec(pos);
     if(selectedItem){
@@ -132,6 +133,8 @@ MainWindow::View MainWindow::showViewContextMenu(const QPoint &pos)
             return MATCH_FILTER;
         else if(selectedItem->text() == "Threshold after MF")
             return MATCH_FILTER_THRESHOLD;
+        else if(selectedItem->text() == "Locate Plates")
+            return PLATE_LOCALIZATION;
     }
 
     return PREVIOUS;
@@ -161,6 +164,9 @@ void MainWindow::updateLeftView()
         break;
     case MATCH_FILTER_THRESHOLD:
         img = matchFilterThreshold;
+        break;
+    case PLATE_LOCALIZATION:
+        img = combined;
         break;
     default:;
     }
@@ -193,6 +199,9 @@ void MainWindow::updateRightView()
     case MATCH_FILTER_THRESHOLD:
         img = matchFilterThreshold;
         break;
+    case PLATE_LOCALIZATION:
+        img = combined;
+        break;
     default:;
     }
     ui->rightView->setPixmap(QPixmap::fromImage(*img));
@@ -216,6 +225,7 @@ void MainWindow::processCurrentFrame()
             delete gauss;
             delete matchFilter;
             delete matchFilterThreshold;
+            delete combined;
         }
 
         // original
@@ -257,6 +267,22 @@ void MainWindow::processCurrentFrame()
         cvThreshold(mf,mft,mfThreshold,255,CV_THRESH_BINARY);
         matchFilterThreshold = Utils::IplImage2QImage(mft);
 
+        //combined with original
+        IplImage *cmb;
+        cmb=cvCloneImage(frame);
+        for (int y=0;y<cmb->height;y++)
+            for (int x=9;x<cmb->width;x++)
+            {
+                int G = ((uchar *)(mft->imageData +y*mft->widthStep))[x*mft->nChannels +1];
+                if (G==255)
+                {
+                    ((uchar *)(cmb->imageData +y*cmb->widthStep))[x*cmb->nChannels +0]=0;
+                    ((uchar *)(cmb->imageData +y*cmb->widthStep))[x*cmb->nChannels +1]=255;
+                    ((uchar *)(cmb->imageData +y*cmb->widthStep))[x*cmb->nChannels +2]=0;
+                }
+            }
+        combined = Utils::IplImage2QImage(cmb);
+
         cvReleaseImage(&grayscale);
         cvReleaseImage(&sobeled);
         cvReleaseImage(&sobeled2);
@@ -264,6 +290,7 @@ void MainWindow::processCurrentFrame()
         cvReleaseImage(&gaussipl);
         cvReleaseImage(&mf);
         cvReleaseImage(&mft);
+        cvReleaseImage(&cmb);
 
         updateBothViews();
     }

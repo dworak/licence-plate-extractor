@@ -17,7 +17,7 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    enum View{PREVIOUS, ORIGINAL, GRAY_SCALE, SOBEL, SOBEL_THRESHOLD, GAUSS, MATCH_FILTER, MATCH_FILTER_THRESHOLD};
+    enum View{PREVIOUS, ORIGINAL, GRAY_SCALE, SOBEL, SOBEL_THRESHOLD, GAUSS, MATCH_FILTER, MATCH_FILTER_THRESHOLD,PLATE_LOCALIZATION};
     
 private slots:
     void nextFrame();
@@ -85,6 +85,7 @@ private:
     QImage *gauss;
     QImage *matchFilter;
     QImage *matchFilterThreshold;
+    QImage *combined;
 
     View leftView;
     View rightView;
