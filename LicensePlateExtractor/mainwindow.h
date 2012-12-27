@@ -50,14 +50,14 @@ private slots:
 
     void on_mfB_valueChanged(double arg1);
 
-    void on_mfVariance_valueChanged(double arg1);
-
     void on_mfThreshold_valueChanged(int arg1);
+
+    void on_mfSD_valueChanged(double arg1);
 
 private:
     Ui::MainWindow *ui;
-    CvCapture* capture;
-    IplImage* frame;
+    cv::VideoCapture capture;
+    cv::Mat frame;
     QTimer *timer;
 
     // parameters
@@ -72,20 +72,20 @@ private:
     int gaussH;
     int mfM;
     int mfN;
-    double mfVariance;
+    double mfSD;
     double mfA;
     double mfB;
     int mfThreshold;
 
 
-    QImage *original;
-    QImage *grayScale;
-    QImage *sobel;
-    QImage *sobelThreshold;
-    QImage *gauss;
-    QImage *matchFilter;
-    QImage *matchFilterThreshold;
-    QImage *combined;
+    QImage original;
+    QImage grayScale;
+    QImage sobel;
+    QImage sobelThreshold;
+    QImage gauss;
+    QImage matchFilter;
+    QImage matchFilterThreshold;
+    QImage combined;
 
     View leftView;
     View rightView;
