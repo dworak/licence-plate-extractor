@@ -54,6 +54,10 @@ private slots:
 
     void on_mfSD_valueChanged(double arg1);
 
+    void on_areaThreshold_valueChanged(int arg1);
+
+    void on_ratioThreshold_valueChanged(double arg1);
+
 private:
     Ui::MainWindow *ui;
     cv::VideoCapture capture;
@@ -76,6 +80,8 @@ private:
     double mfA;
     double mfB;
     int mfThreshold;
+    int rectAreaThreshold;
+    double rectRatioThreshold;
 
 
     cv::Mat grayScale;
