@@ -118,6 +118,73 @@ cv::Mat Utils::getMatchFilterKernel(int m, int n, double sd, double A, double B)
     return result;
 }
 
+// finds rectangles bounding license plates
+// mft - image thresholded after match filter
+// sobelT - image thresholded after Sobel filter
+QLinkedList<cv::Rect> Utils::getLPRects( cv::Mat &mft, cv::Mat &sobelT, int areaThreshold, double ratioThreshold)
+{
+    QLinkedList<cv::Rect> foundRects;
+    std::vector< std::vector<cv::Point> > contours;
+    findContours(mft, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+    for(unsigned i=0; i<contours.size(); i++){
+        cv::Rect r = boundingRect(contours[i]);
+        int x1 = r.x - r.width / 2 >= 0 ? r.x - r.width / 2 : 0;
+        int x2 = r.x + 3 * r.width / 2 < mft.cols ? r.x + 3 * r.width / 2 : mft.cols;
+        int y1 = r.y - r.height >= 0 ? r.y - r.height : 0;
+        int y2 = r.y + 2 * r.height < mft.rows ? r.y + 2 * r.height : mft.rows;
+        cv::Mat roi = sobelT(cv::Range(y1, y2), cv::Range(x1, x2)).clone();
+        morphologyEx(roi, roi, cv::MORPH_CLOSE, cv::Mat(), cv::Point(-1, -1), 2);
+        std::vector< std::vector<cv::Point> > roiContours;
+        std::vector<cv::Rect> rects;    // candidates in roi
+        findContours(roi, roiContours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+        for(unsigned i=0; i < roiContours.size(); i++)
+            rects.push_back(boundingRect(roiContours[i]));
+        double maxArea = 0;
+        cv::Rect *maxRect = NULL;      // best candidate
+        for(unsigned i=0; i < rects.size(); i++){
+            double area = rects[i].area();
+            if(area > maxArea){
+                maxArea = area;
+                maxRect = &rects[i];
+            }
+        }
+        if(maxArea > 0)
+            foundRects.append(cv::Rect(maxRect->x + x1, maxRect->y + y1, maxRect->width, maxRect->height));
+    }
+
+    // merge overlapping rectangles
+    for(QLinkedList<cv::Rect>::iterator rect1 = foundRects.begin(); rect1 != foundRects.end();){
+        QList<cv::Rect> overlapping;
+        for(QLinkedList<cv::Rect>::iterator rect2 = rect1 + 1; rect2 != foundRects.end(); rect2++)
+            if(rect1 != rect2){
+                cv::Rect intersection = *rect1 & *rect2;
+                if(intersection.area() > 0)
+                    overlapping.append(*rect2);
+            }
+        cv::Rect sum = *rect1;
+        foreach(const cv::Rect &r, overlapping){
+            sum |= r;
+            foundRects.removeOne(r);
+        }
+        if(!overlapping.empty()){
+            rect1 = foundRects.erase(rect1);
+            foundRects.append(sum);
+        }
+        else
+            rect1++;
+    }
+
+    // remove false rectangles
+    for(QLinkedList<cv::Rect>::iterator rect = foundRects.begin(); rect != foundRects.end();){
+        if((*rect).area() < areaThreshold || (double)(*rect).width / (*rect).height < ratioThreshold)
+            rect = foundRects.erase(rect);
+        else
+            rect++;
+    }
+
+    return foundRects;
+}
+
 int Utils::makeOdd(int number)
 {
     return number % 2 == 0 ? number + 1 : number;

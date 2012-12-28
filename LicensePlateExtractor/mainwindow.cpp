@@ -53,6 +53,8 @@ MainWindow::MainWindow(QWidget *parent) :
     mfA = ui->mfA->value();
     mfB = ui->mfB->value();
     mfThreshold = ui->mfThreshold->value();
+    rectAreaThreshold = ui->areaThreshold->value();
+    rectRatioThreshold = ui->ratioThreshold->value();
 
     //original = NULL;
     leftView = ORIGINAL;
@@ -239,12 +241,10 @@ void MainWindow::processCurrentFrame()
                 }
             }
 
-        //
-//        std::vector< std::vector<Point> > contours;
-//        findContours(matchFilterThreshold, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
-//        qDebug() << contours.size();
-//        matchFilter = Mat::zeros(matchFilterThreshold.rows, matchFilterThreshold.cols, CV_8UC3);;
-//        drawContours(matchFilter, contours, -1, Scalar( 0, 0, 255 ));
+        // precise license plates rectangles
+        QLinkedList<Rect> rects = Utils::getLPRects(matchFilterThreshold, sobelThreshold, rectAreaThreshold, rectRatioThreshold);
+        foreach(const Rect &rect, rects)
+            rectangle(combined, rect, Scalar(0, 0, 255));
 
         updateBothViews();
     }
@@ -351,5 +351,17 @@ void MainWindow::on_mfThreshold_valueChanged(int arg1)
 void MainWindow::on_mfSD_valueChanged(double arg1)
 {
     mfSD = arg1;
+    processCurrentFrame();
+}
+
+void MainWindow::on_areaThreshold_valueChanged(int arg1)
+{
+    rectAreaThreshold = arg1;
+    processCurrentFrame();
+}
+
+void MainWindow::on_ratioThreshold_valueChanged(double arg1)
+{
+    rectRatioThreshold = arg1;
     processCurrentFrame();
 }
