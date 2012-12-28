@@ -15,7 +15,8 @@ SOURCES += main.cpp\
     utils.cpp
 
 HEADERS  += mainwindow.h \
-    utils.h
+    utils.h \
+    cvimagewidget.h
 
 FORMS    += mainwindow.ui
 

@@ -78,14 +78,13 @@ private:
     int mfThreshold;
 
 
-    QImage original;
-    QImage grayScale;
-    QImage sobel;
-    QImage sobelThreshold;
-    QImage gauss;
-    QImage matchFilter;
-    QImage matchFilterThreshold;
-    QImage combined;
+    cv::Mat grayScale;
+    cv::Mat sobel;
+    cv::Mat sobelThreshold;
+    cv::Mat gauss;
+    cv::Mat matchFilter;
+    cv::Mat matchFilterThreshold;
+    cv::Mat combined;
 
     View leftView;
     View rightView;

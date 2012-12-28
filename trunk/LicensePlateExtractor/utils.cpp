@@ -70,10 +70,6 @@ QImage Utils::Mat2QImage(cv::Mat &matImg)
     }
     return qimg;
 
-//    cv::Mat dest(matImg.rows, matImg.cols, matImg.type());
-//    cvtColor(matImg, dest, CV_BGR2RGB);
-//    return QImage((uchar*) dest.data, dest.cols, dest.rows, QImage::Format_RGB888);
-
 //    IplImage* iplImg = new IplImage(matImg);
 //    QImage *qi = IplImage2QImage(iplImg);
 //    return *qi;
@@ -111,9 +107,7 @@ cv::Mat Utils::getMatchFilterKernel(int m, int n, double sd, double A, double B)
         }
         for(int y=0; y<n; y++)
             result.at<double>(x, y) = val;
-        qDebug() << val;
     }
-    qDebug() << "";
 
 //    double min, total;
 //    minMaxLoc(result, &min);
