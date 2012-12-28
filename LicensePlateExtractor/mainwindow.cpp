@@ -6,7 +6,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc_c.h>
-#include <opencv2/opencv.hpp>
+//#include <opencv2/opencv.hpp>
 
 #include "utils.h"
 
@@ -33,9 +33,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
-    ui->leftView->setText("");
-    ui->rightView->setText("");
 
     timer = new QTimer(this);
     playing = false;
@@ -140,70 +137,64 @@ MainWindow::View MainWindow::showViewContextMenu(const QPoint &pos)
 
 void MainWindow::updateLeftView()
 {
-    QImage *img;
     switch(leftView){
     case ORIGINAL:
-        img = &original;
+        ui->leftView->showImage(frame);
         break;
     case GRAY_SCALE:
-        img = &grayScale;
+        ui->leftView->showImage(grayScale);
         break;
     case SOBEL:
-        img = &sobel;
+        ui->leftView->showImage(sobel);
         break;
     case SOBEL_THRESHOLD:
-        img = &sobelThreshold;
+        ui->leftView->showImage(sobelThreshold);
         break;
     case GAUSS:
-        img = &gauss;
+        ui->leftView->showImage(gauss);
         break;
     case MATCH_FILTER:
-        img = &matchFilter;
+        ui->leftView->showImage(matchFilter);
         break;
     case MATCH_FILTER_THRESHOLD:
-        img = &matchFilterThreshold;
+        ui->leftView->showImage(matchFilterThreshold);
         break;
     case PLATE_LOCALIZATION:
-        img = &combined;
+        ui->leftView->showImage(combined);
         break;
     default:;
     }
-    ui->leftView->setPixmap(QPixmap::fromImage(*img));
-    ui->leftView->repaint();
 }
 
 void MainWindow::updateRightView()
 {
-    QImage *img;
     switch(rightView){
     case ORIGINAL:
-        img = &original;
+        ui->rightView->showImage(frame);
         break;
     case GRAY_SCALE:
-        img = &grayScale;
+        ui->rightView->showImage(grayScale);
         break;
     case SOBEL:
-        img = &sobel;
+        ui->rightView->showImage(sobel);
         break;
     case SOBEL_THRESHOLD:
-        img = &sobelThreshold;
+        ui->rightView->showImage(sobelThreshold);
         break;
     case GAUSS:
-        img = &gauss;
+        ui->rightView->showImage(gauss);
         break;
     case MATCH_FILTER:
-        img = &matchFilter;
+        ui->rightView->showImage(matchFilter);
         break;
     case MATCH_FILTER_THRESHOLD:
-        img = &matchFilterThreshold;
+        ui->rightView->showImage(matchFilterThreshold);
         break;
     case PLATE_LOCALIZATION:
-        img = &combined;
+        ui->rightView->showImage(combined);
         break;
     default:;
     }
-    ui->rightView->setPixmap(QPixmap::fromImage(*img));
-    ui->rightView->repaint();
 }
 
 void MainWindow::updateBothViews()
@@ -215,54 +206,45 @@ void MainWindow::updateBothViews()
 void MainWindow::processCurrentFrame()
 {
     if(!frame.empty()){
-        // original
-        original = Utils::Mat2QImage(frame);
-
         // gray scale
-        Mat grayScaleMat;
-        cvtColor(frame,grayScaleMat,CV_RGB2GRAY);
-        grayScale = Utils::Mat2QImage(grayScaleMat);
+        cvtColor(frame,grayScale,CV_RGB2GRAY);
 
         // sobel
-        Mat sobelMat;
-        Sobel(grayScaleMat,sobelMat,CV_16S,sobelXorder,sobelYorder,sobelAperture,1./256);
-        convertScaleAbs(sobelMat,sobelMat);
-        sobel = Utils::Mat2QImage(sobelMat);
+        Sobel(grayScale,sobel,CV_16S,sobelXorder,sobelYorder,sobelAperture,1./256);
+        convertScaleAbs(sobel,sobel);
 
         // sobel threshold
-        Mat sobelThresholdMat;
-        threshold(sobelMat,sobelThresholdMat,sobelThresholdParam,255,THRESH_BINARY);
-        sobelThreshold = Utils::Mat2QImage(sobelThresholdMat);
+        threshold(sobel,sobelThreshold,sobelThresholdParam,255,THRESH_BINARY);
 
         // gauss
-        Mat gaussMat;
-        GaussianBlur(sobelThresholdMat,gaussMat,Size(gaussW,gaussH),0,0);
-        gauss = Utils::Mat2QImage(gaussMat);
+        GaussianBlur(sobelThreshold,gauss,Size(gaussW,gaussH),0,0);
 
         // match filter
-        Mat matchFilterMat;
-        filter2D(gaussMat, matchFilterMat, -1, Utils::getMatchFilterKernel(mfM, mfN, mfSD, mfA, mfB));
-        matchFilter = Utils::Mat2QImage(matchFilterMat);
+        filter2D(gauss, matchFilter, -1, Utils::getMatchFilterKernel(mfM, mfN, mfSD, mfA, mfB));
 
         // match filter threshold
-        Mat matchFilterThresholdMat;
-        threshold(matchFilterMat,matchFilterThresholdMat,mfThreshold,255,THRESH_BINARY);
-        matchFilterThreshold = Utils::Mat2QImage(matchFilterThresholdMat);
+        threshold(matchFilter,matchFilterThreshold,mfThreshold,255,THRESH_BINARY);
 
-        //combined with original
-        Mat combinedMat = frame.clone();
-        for (int y=0;y<combinedMat.rows;y++)
-            for (int x=9;x<combinedMat.cols;x++)
+        // combined with original
+        combined = frame.clone();
+        for (int y=0;y<combined.rows;y++)
+            for (int x=9;x<combined.cols;x++)
             {
-                int G = ((uchar *)(matchFilterThresholdMat.data +y*matchFilterThresholdMat.step))[x*matchFilterThresholdMat.channels() +1];
+                int G = ((uchar *)(matchFilterThreshold.data +y*matchFilterThreshold.step))[x*matchFilterThreshold.channels() +1];
                 if (G==255)
                 {
-                    ((uchar *)(combinedMat.data +y*combinedMat.step))[x*combinedMat.channels() +0]=0;
-                    ((uchar *)(combinedMat.data +y*combinedMat.step))[x*combinedMat.channels() +1]=255;
-                    ((uchar *)(combinedMat.data +y*combinedMat.step))[x*combinedMat.channels() +2]=0;
+                    ((uchar *)(combined.data +y*combined.step))[x*combined.channels() +0]=0;
+                    ((uchar *)(combined.data +y*combined.step))[x*combined.channels() +1]=255;
+                    ((uchar *)(combined.data +y*combined.step))[x*combined.channels() +2]=0;
                 }
             }
-        combined = Utils::Mat2QImage(combinedMat);
+
+        //
+//        std::vector< std::vector<Point> > contours;
+//        findContours(matchFilterThreshold, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+//        qDebug() << contours.size();
+//        matchFilter = Mat::zeros(matchFilterThreshold.rows, matchFilterThreshold.cols, CV_8UC3);;
+//        drawContours(matchFilter, contours, -1, Scalar( 0, 0, 255 ));
 
         updateBothViews();
     }

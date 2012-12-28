@@ -31,22 +31,16 @@
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout_3">
         <item>
-         <widget class="QLabel" name="leftView">
+         <widget class="CVImageWidget" name="leftView" native="true">
           <property name="contextMenuPolicy">
            <enum>Qt::CustomContextMenu</enum>
-          </property>
-          <property name="text">
-           <string>Left View</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="rightView">
+         <widget class="CVImageWidget" name="rightView" native="true">
           <property name="contextMenuPolicy">
            <enum>Qt::CustomContextMenu</enum>
-          </property>
-          <property name="text">
-           <string>Right View</string>
           </property>
          </widget>
         </item>
@@ -431,6 +425,14 @@
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>CVImageWidget</class>
+   <extends>QWidget</extends>
+   <header>cvimagewidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="resources.qrc"/>
  </resources>
