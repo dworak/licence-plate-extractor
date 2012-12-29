@@ -3,7 +3,8 @@
 
 #include <QMainWindow>
 
-#include <opencv2/highgui/highgui.hpp>
+//#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/opencv.hpp>
 
 namespace Ui {
 class MainWindow;
@@ -57,6 +58,10 @@ private slots:
     void on_areaThreshold_valueChanged(int arg1);
 
     void on_ratioThreshold_valueChanged(double arg1);
+
+    void on_thres_valueChanged(int arg1);
+
+    void on_thres2_valueChanged(int arg1);
 
 private:
     Ui::MainWindow *ui;
