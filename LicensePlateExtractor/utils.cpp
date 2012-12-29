@@ -1,7 +1,7 @@
 #include "utils.h"
 
 #include <QDebug>
-#include <opencv2/opencv.hpp>
+//#include <opencv2/opencv.hpp>
 
 QImage *Utils::IplImage2QImage(IplImage *iplImg)
 {
@@ -118,14 +118,41 @@ cv::Mat Utils::getMatchFilterKernel(int m, int n, double sd, double A, double B)
     return result;
 }
 
+cv::Rect Utils::getLPInterior(const cv::Mat &lp)
+{
+    cv::Mat _lp;
+    threshold(lp, _lp, Utils::getLPThreshold(lp, 1./4, 1./4) - 10, 255, cv::THRESH_BINARY);
+
+    std::vector< std::vector<cv::Point> > contours;
+    findContours(_lp, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+    QList<cv::Rect> rects;
+    for(unsigned i=0; i<contours.size(); i++)
+        rects.append(boundingRect(contours[i]));
+
+    const cv::Rect *innerRect = NULL;
+    double minArea = _lp.cols * _lp.rows;
+    foreach(const cv::Rect& rect, rects){
+        if(rect.width > 0.5 * _lp.cols && rect.height > 0.5 * _lp.rows && rect.area() < minArea){
+            minArea = rect.area();
+            innerRect = &rect;
+        }
+    }
+
+    if(innerRect != NULL)
+        return *innerRect;
+    else
+        return cv::Rect();
+}
+
 // finds rectangles bounding license plates
 // mft - image thresholded after match filter
 // sobelT - image thresholded after Sobel filter
-QLinkedList<cv::Rect> Utils::getLPRects( cv::Mat &mft, cv::Mat &sobelT, int areaThreshold, double ratioThreshold)
+QLinkedList<cv::Rect> Utils::getLPRects(const cv::Mat &mft, const cv::Mat &sobelT, int areaThreshold, double ratioThreshold)
 {
     QLinkedList<cv::Rect> foundRects;
     std::vector< std::vector<cv::Point> > contours;
-    findContours(mft, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+    cv::Mat _mft = mft.clone();
+    findContours(_mft, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
     for(unsigned i=0; i<contours.size(); i++){
         cv::Rect r = boundingRect(contours[i]);
         int x1 = r.x - r.width / 2 >= 0 ? r.x - r.width / 2 : 0;
@@ -183,6 +210,62 @@ QLinkedList<cv::Rect> Utils::getLPRects( cv::Mat &mft, cv::Mat &sobelT, int area
     }
 
     return foundRects;
+}
+
+QLinkedList<cv::Rect> Utils::getLPSignsRects(const cv::Mat &lp)
+{
+    //cv::Rect innerRect = Utils::getLPInterior(lp);
+
+    //if(innerRect.width > 0){
+        //cv::Mat _lp = lp(innerRect).clone();
+        cv::Mat _lp;
+        adaptiveThreshold(lp, _lp, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, Utils::makeOdd(lp.rows), 0);
+        _lp = 255 - _lp;
+
+        std::vector< std::vector<cv::Point> > contours;
+        findContours(_lp, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+        QLinkedList<cv::Rect> rects;
+        for(unsigned i=0; i < contours.size(); i++)
+            rects.append(boundingRect(contours[i]));
+
+        // remove false rectangles
+        for(QLinkedList<cv::Rect>::iterator rect = rects.begin(); rect != rects.end();){
+            double ratio = (double)(*rect).width / (*rect).height;
+            double area = (*rect).area();
+            if(ratio < 0.4 || ratio > 0.9 || area < 700 || area > 6000)
+                rect = rects.erase(rect);
+            else
+                rect++;
+        }
+
+        // remove rectangles contained in another rectangles
+        for(QLinkedList<cv::Rect>::iterator rect1 = rects.begin(); rect1 != rects.end();rect1++){
+            for(QLinkedList<cv::Rect>::iterator rect2 = rects.begin(); rect2 != rects.end();){
+                cv::Rect r1 = *rect1;
+                cv::Rect r2 = *rect2;
+                if(r1.contains(r2.tl()) && r1.contains(r2.br()))
+                    rect2 = rects.erase(rect2);
+                else
+                    rect2++;
+            }
+        }
+
+    //}
+
+    return rects;
+}
+
+double Utils::getLPThreshold(const cv::Mat &lp, double leftMargin, double rightMargin)
+{
+    cv::Mat roi = lp(cv::Range(lp.rows / 3, 2 * lp.rows / 3), cv::Range(leftMargin * lp.cols, (1 - rightMargin) * lp.cols)).clone();
+    cv::Mat _roi;
+    equalizeHist(roi, _roi);
+    cv::Mat mask1, mask2;
+    threshold(_roi, mask1, 143, 255, cv::THRESH_BINARY);
+    double mean1 = mean(roi, mask1)[0];
+    threshold(_roi, mask2, 111, 255, cv::THRESH_BINARY_INV);
+    double mean2 = mean(roi, mask2)[0];
+    return (mean1 + mean2) / 2;
 }
 
 int Utils::makeOdd(int number)

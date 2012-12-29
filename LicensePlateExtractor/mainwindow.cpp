@@ -3,9 +3,9 @@
 
 #include <QTimer>
 #include <iostream>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc_c.h>
+//#include <opencv2/highgui/highgui.hpp>
+//#include <opencv2/core/core.hpp>
+//#include <opencv2/imgproc/imgproc_c.h>
 //#include <opencv2/opencv.hpp>
 
 #include "utils.h"
@@ -242,9 +242,22 @@ void MainWindow::processCurrentFrame()
             }
 
         // precise license plates rectangles
-        QLinkedList<Rect> rects = Utils::getLPRects(matchFilterThreshold, sobelThreshold, rectAreaThreshold, rectRatioThreshold);
-        foreach(const Rect &rect, rects)
+        QLinkedList<Rect> lprects = Utils::getLPRects(matchFilterThreshold, sobelThreshold, rectAreaThreshold, rectRatioThreshold);
+        foreach(const Rect &rect, lprects)
             rectangle(combined, rect, Scalar(0, 0, 255));
+
+        //
+        if(lprects.size() > 0){
+            Mat roi = grayScale(lprects.first()).clone();
+            cv::resize(roi, roi, cv::Size(100. * roi.cols / roi.rows, 100));
+            QLinkedList<Rect> lpSignsRects = Utils::getLPSignsRects(roi);
+            cvtColor(roi, roi, CV_GRAY2BGR);
+            foreach(const Rect &rect, lpSignsRects)
+                rectangle(roi, rect, Scalar(0, 255, 0));
+            ui->cvwidget->showImage(roi);
+        }
+        else
+            ui->cvwidget->clear();
 
         updateBothViews();
     }
@@ -363,5 +376,15 @@ void MainWindow::on_areaThreshold_valueChanged(int arg1)
 void MainWindow::on_ratioThreshold_valueChanged(double arg1)
 {
     rectRatioThreshold = arg1;
+    processCurrentFrame();
+}
+
+void MainWindow::on_thres_valueChanged(int arg1)
+{
+    processCurrentFrame();
+}
+
+void MainWindow::on_thres2_valueChanged(int arg1)
+{
     processCurrentFrame();
 }
