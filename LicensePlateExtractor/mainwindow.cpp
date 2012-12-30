@@ -61,6 +61,7 @@ MainWindow::MainWindow(QWidget *parent) :
     rightView = GRAY_SCALE;
 
     capture = VideoCapture("../Sample/MVI_1022.AVI");
+    current = 0;
 }
 
 MainWindow::~MainWindow()
@@ -82,6 +83,8 @@ void MainWindow::nextFrame()
         ui->rightView->clear();
         ui->playPause->setIcon(QIcon(":/icon/play"));
     }
+    current++;
+    ui->current->setText(QString::number(current));
 }
 
 void MainWindow::on_leftView_customContextMenuRequested(const QPoint &pos)
@@ -250,7 +253,7 @@ void MainWindow::processCurrentFrame()
         if(lprects.size() > 0){
             Mat roi = grayScale(lprects.first()).clone();
             cv::resize(roi, roi, cv::Size(100. * roi.cols / roi.rows, 100));
-            QLinkedList<Rect> lpSignsRects = Utils::getLPSignsRects(roi);
+            QList<Rect> lpSignsRects = Utils::getLPSignsRects(roi);
             cvtColor(roi, roi, CV_GRAY2BGR);
             foreach(const Rect &rect, lpSignsRects)
                 rectangle(roi, rect, Scalar(0, 255, 0));
@@ -379,12 +382,7 @@ void MainWindow::on_ratioThreshold_valueChanged(double arg1)
     processCurrentFrame();
 }
 
-void MainWindow::on_thres_valueChanged(int arg1)
-{
-    processCurrentFrame();
-}
-
-void MainWindow::on_thres2_valueChanged(int arg1)
+void MainWindow::on_atc_valueChanged(int arg1)
 {
     processCurrentFrame();
 }

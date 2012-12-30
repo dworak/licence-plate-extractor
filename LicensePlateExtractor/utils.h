@@ -6,6 +6,7 @@
 
 //#include <opencv2/core/core.hpp>
 //#include <opencv2/highgui/highgui.hpp>
+#include "cvimagewidget.h"
 #include <opencv2/opencv.hpp>
 
 class Utils
@@ -16,7 +17,8 @@ public:
     static cv::Mat getMatchFilterKernel(int m, int n, double sd, double A, double B);
     static cv::Rect getLPInterior(const cv::Mat &lp);
     static QLinkedList<cv::Rect> getLPRects(const cv::Mat &mft, const cv::Mat &sobelT, int areaThreshold, double ratioThreshold);
-    static QLinkedList<cv::Rect> getLPSignsRects(const cv::Mat &lp);
+    static QList<cv::Rect> getLPSignsRects(const cv::Mat &lp, int C);
+    static QList<cv::Rect> getLPSignsRects(const cv::Mat &lp);
     static double getLPThreshold(const cv::Mat &lp, double leftMargin, double rightMargin);
     static int makeOdd(int number);
 };

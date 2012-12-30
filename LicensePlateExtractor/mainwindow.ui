@@ -103,6 +103,13 @@
             </property>
            </widget>
           </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="current">
+            <property name="text">
+             <string>current</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -406,29 +413,6 @@
             </property>
             <property name="value">
              <number>120</number>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QSpinBox" name="thres">
-            <property name="maximum">
-             <number>255</number>
-            </property>
-            <property name="value">
-             <number>128</number>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QSpinBox" name="thres2">
-            <property name="minimum">
-             <number>-255</number>
-            </property>
-            <property name="maximum">
-             <number>255</number>
-            </property>
-            <property name="value">
-             <number>0</number>
             </property>
            </widget>
           </item>
