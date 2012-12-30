@@ -1,7 +1,6 @@
 #include "utils.h"
 
 #include <QDebug>
-//#include <opencv2/opencv.hpp>
 
 QImage *Utils::IplImage2QImage(IplImage *iplImg)
 {
@@ -72,7 +71,7 @@ QImage Utils::Mat2QImage(cv::Mat &matImg)
 
 //    IplImage* iplImg = new IplImage(matImg);
 //    QImage *qi = IplImage2QImage(iplImg);
-//    return *qi;
+    //    return *qi;
 }
 
 cv::Mat Utils::getMatchFilterKernel(int m, int n, double sd, double A, double B)
@@ -212,47 +211,91 @@ QLinkedList<cv::Rect> Utils::getLPRects(const cv::Mat &mft, const cv::Mat &sobel
     return foundRects;
 }
 
-QLinkedList<cv::Rect> Utils::getLPSignsRects(const cv::Mat &lp)
+QList<cv::Rect> Utils::getLPSignsRects(const cv::Mat &lp, int C)
 {
-    //cv::Rect innerRect = Utils::getLPInterior(lp);
+    cv::Mat _lp;
+    adaptiveThreshold(lp, _lp, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, Utils::makeOdd(lp.rows), C);
 
-    //if(innerRect.width > 0){
-        //cv::Mat _lp = lp(innerRect).clone();
-        cv::Mat _lp;
-        adaptiveThreshold(lp, _lp, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, Utils::makeOdd(lp.rows), 0);
-        _lp = 255 - _lp;
+    // find rectangles around contours
+    std::vector< std::vector<cv::Point> > contours;
+    findContours(_lp, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+    QLinkedList<cv::Rect> rects;
+    for(unsigned i=0; i < contours.size(); i++)
+        rects.append(boundingRect(contours[i]));
 
-        std::vector< std::vector<cv::Point> > contours;
-        findContours(_lp, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
-        QLinkedList<cv::Rect> rects;
-        for(unsigned i=0; i < contours.size(); i++)
-            rects.append(boundingRect(contours[i]));
+    // remove false rectangles
+    for(QLinkedList<cv::Rect>::iterator rect = rects.begin(); rect != rects.end();){
+        double ratio = (double)(*rect).width / (*rect).height;
+        double area = (*rect).area();
+        if(ratio < 0.4 || ratio > 0.9 || area < 1000 || area > 6000)
+            rect = rects.erase(rect);
+        else
+            rect++;
+    }
 
-        // remove false rectangles
-        for(QLinkedList<cv::Rect>::iterator rect = rects.begin(); rect != rects.end();){
-            double ratio = (double)(*rect).width / (*rect).height;
-            double area = (*rect).area();
-            if(ratio < 0.4 || ratio > 0.9 || area < 700 || area > 6000)
-                rect = rects.erase(rect);
+    // remove rectangles contained in another rectangles
+    for(QLinkedList<cv::Rect>::iterator rect1 = rects.begin(); rect1 != rects.end();rect1++){
+        for(QLinkedList<cv::Rect>::iterator rect2 = rects.begin(); rect2 != rects.end();){
+            cv::Rect r1 = *rect1;
+            cv::Rect r2 = *rect2;
+            if(r1.contains(r2.tl()) && r1.contains(r2.br()))
+                rect2 = rects.erase(rect2);
             else
-                rect++;
+                rect2++;
         }
+    }
 
-        // remove rectangles contained in another rectangles
-        for(QLinkedList<cv::Rect>::iterator rect1 = rects.begin(); rect1 != rects.end();rect1++){
-            for(QLinkedList<cv::Rect>::iterator rect2 = rects.begin(); rect2 != rects.end();){
-                cv::Rect r1 = *rect1;
-                cv::Rect r2 = *rect2;
-                if(r1.contains(r2.tl()) && r1.contains(r2.br()))
-                    rect2 = rects.erase(rect2);
-                else
-                    rect2++;
-            }
+    // sort rectangles
+    QMap<int, cv::Rect> map;
+    foreach(const cv::Rect &rect, rects)
+        map.insert(rect.x, rect);
+    QList<cv::Rect> sortedRects = map.values();
+
+    // remove false left outermost rectangle if any
+    if(sortedRects.size() > 0){
+        cv::Rect &first = sortedRects.first();
+        cv::Mat roi = lp(first);
+        roi = roi(cv::Range(0, roi.rows / 2), cv::Range::all());
+        cv::Scalar mean, stddev;
+        cv::meanStdDev(roi, mean, stddev);
+        if(stddev[0] < 20 || first.x <= 2)
+            sortedRects.removeFirst();
+    }
+
+    return sortedRects;
+}
+
+QList<cv::Rect> Utils::getLPSignsRects(const cv::Mat &lp)
+{
+    // find best set of rectangles
+    QMap< double, QList<cv::Rect> > candidates;
+    for(int i = -10; i <= 10; i+=10){
+        QList<cv::Rect> candidate = getLPSignsRects(lp, i);
+        double totalArea = 0;
+        foreach(const cv::Rect &rect, candidate)
+            totalArea += rect.area();
+        candidates.insert(totalArea, candidate);
+    }
+    QList<cv::Rect> best = candidates.values().last();
+
+    // align heights
+    if(best.size() >= 4){
+        QList<int> tops, bottoms;
+        foreach(const cv::Rect &rect, best){
+            tops.append(rect.y);
+            bottoms.append(rect.br().y);
         }
+        qSort(tops);
+        qSort(bottoms);
+        int height;
+        height = bottoms[bottoms.size() - 2] - tops[1];
+        for(int i=0; i<best.size(); i++){
+            best[i].y -= (height - best[i].height) / 2;
+            best[i].height = height;
+        }
+    }
 
-    //}
-
-    return rects;
+    return best;
 }
 
 double Utils::getLPThreshold(const cv::Mat &lp, double leftMargin, double rightMargin)

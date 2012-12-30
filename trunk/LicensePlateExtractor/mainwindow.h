@@ -59,14 +59,13 @@ private slots:
 
     void on_ratioThreshold_valueChanged(double arg1);
 
-    void on_thres_valueChanged(int arg1);
-
-    void on_thres2_valueChanged(int arg1);
+    void on_atc_valueChanged(int arg1);
 
 private:
     Ui::MainWindow *ui;
     cv::VideoCapture capture;
     cv::Mat frame;
+    int current;
     QTimer *timer;
 
     // parameters
