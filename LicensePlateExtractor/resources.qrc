@@ -1,6 +1,49 @@
 <RCC>
     <qresource prefix="/icon">
-        <file alias="pause">icon/pause.png</file>
-        <file alias="play">icon/play.png</file>
+        <file alias="play">img/icon/play.png</file>
+        <file alias="pause">img/icon/pause.png</file>
+        <file alias="backward">img/icon/skip_backward.png</file>
+        <file alias="forward">img/icon/skip_forward.png</file>
+        <file alias="stop">img/icon/stop.png</file>
+    </qresource>
+    <qresource prefix="/ch">
+        <file alias="0">img/character/0.png</file>
+        <file alias="1">img/character/1.png</file>
+        <file alias="2">img/character/2.png</file>
+        <file alias="3">img/character/3.png</file>
+        <file alias="4">img/character/4.png</file>
+        <file alias="5">img/character/5.png</file>
+        <file alias="6">img/character/6.png</file>
+        <file alias="7">img/character/7.png</file>
+        <file alias="8">img/character/8.png</file>
+        <file alias="9">img/character/9.png</file>
+        <file alias="A">img/character/nA.png</file>
+        <file alias="B">img/character/nB.png</file>
+        <file alias="C">img/character/nC.png</file>
+        <file alias="D">img/character/nD.png</file>
+        <file alias="E">img/character/nE.png</file>
+        <file alias="F">img/character/nF.png</file>
+        <file alias="G">img/character/nG.png</file>
+        <file alias="H">img/character/nH.png</file>
+        <file alias="I">img/character/nI.png</file>
+        <file alias="J">img/character/nJ.png</file>
+        <file alias="K">img/character/nK.png</file>
+        <file alias="L">img/character/nL.png</file>
+        <file alias="M">img/character/nM.png</file>
+        <file alias="N">img/character/nN.png</file>
+        <file alias="O">img/character/nO.png</file>
+        <file alias="P">img/character/nP.png</file>
+        <file alias="R">img/character/nR.png</file>
+        <file alias="S">img/character/nS.png</file>
+        <file alias="T">img/character/nT.png</file>
+        <file alias="U">img/character/nU.png</file>
+        <file alias="V">img/character/nV.png</file>
+        <file alias="W">img/character/nW.png</file>
+        <file alias="X">img/character/nX.png</file>
+        <file alias="Y">img/character/nY.png</file>
+        <file alias="Z">img/character/nZ.png</file>
+    </qresource>
+    <qresource prefix="/font">
+        <file alias="lpfont">font/arklatrs.ttf</file>
     </qresource>
 </RCC>

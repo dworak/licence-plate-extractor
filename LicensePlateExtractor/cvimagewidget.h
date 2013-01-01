@@ -1,17 +1,31 @@
 #pragma once
+
 #include <QWidget>
 #include <QImage>
+#include <QMouseEvent>
 #include <QPainter>
+
 #include <opencv2/opencv.hpp>
+
+#include <QDebug>
 
 class CVImageWidget : public QWidget
 {
     Q_OBJECT
+
 public:
     explicit CVImageWidget(QWidget *parent = 0) : QWidget(parent) {}
 
     QSize sizeHint() const { return _qimage.size(); }
     QSize minimumSizeHint() const { return _qimage.size(); }
+
+    void mousePressEvent(QMouseEvent *event){
+        if(event->button() == Qt::LeftButton)
+            emit clicked(event->x(), event->y());
+    }
+
+signals:
+    void clicked(int x, int y);
 
 public slots:
 
