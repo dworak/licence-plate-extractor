@@ -74,6 +74,50 @@ QImage Utils::Mat2QImage(cv::Mat &matImg)
     //    return *qi;
 }
 
+cv::Mat Utils::QImage2Mat(const QImage &img)
+{
+    return cv::Mat(img.height(), img.width(), CV_8UC1, (uchar*)img.bits(), img.bytesPerLine()).clone();
+}
+
+void Utils::preparePatterns(Patterns &patterns)
+{
+    //patterns.insert('0', QImage2Mat(QImage(":/ch/0")));
+    patterns.insert('1', QImage2Mat(QImage(":/ch/1")));
+    patterns.insert('2', QImage2Mat(QImage(":/ch/2")));
+    patterns.insert('3', QImage2Mat(QImage(":/ch/3")));
+    patterns.insert('4', QImage2Mat(QImage(":/ch/4")));
+    patterns.insert('5', QImage2Mat(QImage(":/ch/5")));
+    patterns.insert('6', QImage2Mat(QImage(":/ch/6")));
+    patterns.insert('7', QImage2Mat(QImage(":/ch/7")));
+    patterns.insert('8', QImage2Mat(QImage(":/ch/8")));
+    patterns.insert('9', QImage2Mat(QImage(":/ch/9")));
+    patterns.insert('A', QImage2Mat(QImage(":/ch/A")));
+    patterns.insert('B', QImage2Mat(QImage(":/ch/B")));
+    patterns.insert('C', QImage2Mat(QImage(":/ch/C")));
+    patterns.insert('D', QImage2Mat(QImage(":/ch/D")));
+    patterns.insert('E', QImage2Mat(QImage(":/ch/E")));
+    patterns.insert('F', QImage2Mat(QImage(":/ch/F")));
+    patterns.insert('G', QImage2Mat(QImage(":/ch/G")));
+    patterns.insert('H', QImage2Mat(QImage(":/ch/H")));
+    patterns.insert('I', QImage2Mat(QImage(":/ch/I")));
+    patterns.insert('J', QImage2Mat(QImage(":/ch/J")));
+    patterns.insert('K', QImage2Mat(QImage(":/ch/K")));
+    patterns.insert('L', QImage2Mat(QImage(":/ch/L")));
+    patterns.insert('M', QImage2Mat(QImage(":/ch/M")));
+    patterns.insert('N', QImage2Mat(QImage(":/ch/N")));
+    patterns.insert('O', QImage2Mat(QImage(":/ch/O")));
+    patterns.insert('P', QImage2Mat(QImage(":/ch/P")));
+    patterns.insert('R', QImage2Mat(QImage(":/ch/R")));
+    patterns.insert('S', QImage2Mat(QImage(":/ch/S")));
+    patterns.insert('T', QImage2Mat(QImage(":/ch/T")));
+    patterns.insert('U', QImage2Mat(QImage(":/ch/U")));
+    patterns.insert('V', QImage2Mat(QImage(":/ch/V")));
+    patterns.insert('W', QImage2Mat(QImage(":/ch/W")));
+    patterns.insert('X', QImage2Mat(QImage(":/ch/X")));
+    patterns.insert('Y', QImage2Mat(QImage(":/ch/Y")));
+    patterns.insert('Z', QImage2Mat(QImage(":/ch/Z")));
+}
+
 cv::Mat Utils::getMatchFilterKernel(int m, int n, double sd, double A, double B)
 {
 //    double kernel[m][n];
@@ -146,7 +190,7 @@ cv::Rect Utils::getLPInterior(const cv::Mat &lp)
 // finds rectangles bounding license plates
 // mft - image thresholded after match filter
 // sobelT - image thresholded after Sobel filter
-QLinkedList<cv::Rect> Utils::getLPRects(const cv::Mat &mft, const cv::Mat &sobelT, int areaThreshold, double ratioThreshold)
+QList<cv::Rect> Utils::getLPRects(const cv::Mat &mft, const cv::Mat &sobelT, int areaThreshold, double ratioThreshold)
 {
     QLinkedList<cv::Rect> foundRects;
     std::vector< std::vector<cv::Point> > contours;
@@ -208,10 +252,13 @@ QLinkedList<cv::Rect> Utils::getLPRects(const cv::Mat &mft, const cv::Mat &sobel
             rect++;
     }
 
-    return foundRects;
+    QList<cv::Rect> result;
+    foreach(const cv::Rect &rect, foundRects)
+        result.append(rect);
+    return result;
 }
 
-QList<cv::Rect> Utils::getLPSignsRects(const cv::Mat &lp, int C)
+QList<cv::Rect> Utils::getLPCharactersRects(const cv::Mat &lp, int C)
 {
     cv::Mat _lp;
     adaptiveThreshold(lp, _lp, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, Utils::makeOdd(lp.rows), C);
@@ -265,12 +312,12 @@ QList<cv::Rect> Utils::getLPSignsRects(const cv::Mat &lp, int C)
     return sortedRects;
 }
 
-QList<cv::Rect> Utils::getLPSignsRects(const cv::Mat &lp)
+QList<cv::Rect> Utils::getLPCharactersRects(const cv::Mat &lp)
 {
     // find best set of rectangles
     QMap< double, QList<cv::Rect> > candidates;
     for(int i = -10; i <= 10; i+=10){
-        QList<cv::Rect> candidate = getLPSignsRects(lp, i);
+        QList<cv::Rect> candidate = getLPCharactersRects(lp, i);
         double totalArea = 0;
         foreach(const cv::Rect &rect, candidate)
             totalArea += rect.area();
@@ -289,9 +336,21 @@ QList<cv::Rect> Utils::getLPSignsRects(const cv::Mat &lp)
         qSort(bottoms);
         int height;
         height = bottoms[bottoms.size() - 2] - tops[1];
-        for(int i=0; i<best.size(); i++){
-            best[i].y -= (height - best[i].height) / 2;
-            best[i].height = height;
+        if(height <= lp.rows)
+            for(int i=0; i < best.size(); i++){
+                best[i].y -= (height - best[i].height) / 2;
+                if(best[i].y < 0)
+                    best[i].y = 0;
+                best[i].height = height;
+                if(best[i].br().y > lp.rows)
+                    best[i].height = lp.rows - best[i].y;
+            }
+
+        for(int i=0; i < best.size(); i++){
+            if(best[i].x > 0)
+                best[i].x--;
+            if(best[i].br().x < lp.cols - 2)
+                best[i].width += 2;
         }
     }
 
@@ -309,6 +368,26 @@ double Utils::getLPThreshold(const cv::Mat &lp, double leftMargin, double rightM
     threshold(_roi, mask2, 111, 255, cv::THRESH_BINARY_INV);
     double mean2 = mean(roi, mask2)[0];
     return (mean1 + mean2) / 2;
+}
+
+char Utils::recognizeCharacter(const cv::Mat &character, const Patterns &patterns)
+{
+    cv::Mat ch;
+    cv::resize(character, ch, cv::Size(47, 80));
+    cv::equalizeHist(ch, ch);
+    int minSum = 47 * 80 * 255 / 3;
+    char bestCh = '?';
+    for(Patterns::const_iterator it = patterns.begin(); it != patterns.end(); it++){
+        cv::Mat diff;
+        absdiff(ch, it.value(), diff);
+        int sum = cv::sum(diff)[0];
+        if(sum < minSum){
+            minSum = sum;
+            bestCh = it.key();
+        }
+    }
+
+    return bestCh;
 }
 
 int Utils::makeOdd(int number)

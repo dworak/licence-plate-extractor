@@ -1,43 +1,28 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QFontDatabase>
 #include <QTimer>
-#include <iostream>
-//#include <opencv2/highgui/highgui.hpp>
-//#include <opencv2/core/core.hpp>
-//#include <opencv2/imgproc/imgproc_c.h>
-//#include <opencv2/opencv.hpp>
 
-#include "utils.h"
+#include <iostream>
 
 #include <QDebug>
 
 using namespace cv;
-
-
-//IplImage* skipNFrames(CvCapture* capture, int n)
-//{
-//    for(int i = 0; i < n; ++i)
-//    {
-//        if(cvQueryFrame(capture) == NULL)
-//        {
-//            return NULL;
-//        }
-//    }
-
-//    return cvQueryFrame(capture);
-//}
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    this->setWindowTitle("License Plate Extractor");
 
     timer = new QTimer(this);
     playing = false;
     frameDelay = ui->frameDelay->value();
     connect(timer, SIGNAL(timeout()), this, SLOT(nextFrame()));
+    connect(ui->leftView, SIGNAL(clicked(int,int)), this, SLOT(showLicensePlate(int,int)));
+    connect(ui->rightView, SIGNAL(clicked(int,int)), this, SLOT(showLicensePlate(int,int)));
 
     sobelAperture = Utils::makeOdd(ui->sobelAperture->value());
     ui->sobelXorder->setMaximum(sobelAperture - 1);
@@ -56,12 +41,26 @@ MainWindow::MainWindow(QWidget *parent) :
     rectAreaThreshold = ui->areaThreshold->value();
     rectRatioThreshold = ui->ratioThreshold->value();
 
-    //original = NULL;
-    leftView = ORIGINAL;
-    rightView = GRAY_SCALE;
+    QFontDatabase::addApplicationFont(":/font/lpfont");
+    ui->recognizedText->setText("");
+    ui->recognizedText->setFont(QFont("arklas Tablica samochodowa", 24));
+
+    leftView = PLATE_LOCALIZATION;
+    rightView = ORIGINAL;
+
+    patterns = Patterns();
+    Utils::preparePatterns(patterns);
 
     capture = VideoCapture("../Sample/MVI_1022.AVI");
-    current = 0;
+    frameCount = capture.get(CV_CAP_PROP_FRAME_COUNT);
+    capture.set(CV_CAP_PROP_POS_FRAMES, 100);
+    currentFrame = -1;
+    currentLicensePlate = -1;
+
+    ui->currentFrame->setMaximum(frameCount);
+    ui->totalFrames->setText(QString::number(frameCount));
+
+    goToFrame(0);
 }
 
 MainWindow::~MainWindow()
@@ -71,10 +70,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::nextFrame()
 {
-    capture >> frame;
-
-    if(!frame.empty()){
-        processCurrentFrame();
+    if(currentFrame < frameCount - 1){
+        goToFrame(currentFrame + 1);
     }
     else
     {
@@ -82,9 +79,24 @@ void MainWindow::nextFrame()
         ui->leftView->clear();
         ui->rightView->clear();
         ui->playPause->setIcon(QIcon(":/icon/play"));
+        currentFrame = -1;
+        goToFrame(0);
     }
-    current++;
-    ui->current->setText(QString::number(current));
+}
+
+void MainWindow::showLicensePlate(int x, int y)
+{
+    if(lpRects.size() > 0){
+        int i = 0;
+        while(i < lpRects.size() && !lpRects[i].contains(Point(x, y)))
+            i++;
+        if(i < lpRects.size()){
+            currentLicensePlate = i;
+            showCurrentLicensePlate();
+            drawLPRects();
+        }
+    }
+    updateBothViews();
 }
 
 void MainWindow::on_leftView_customContextMenuRequested(const QPoint &pos)
@@ -115,7 +127,7 @@ MainWindow::View MainWindow::showViewContextMenu(const QPoint &pos)
     menu.addAction("Gaussian blur");
     menu.addAction("Match Filter");
     menu.addAction("Threshold after MF");
-    menu.addAction("Locate Plates");
+    menu.addAction("Original with LP locations");
 
     QAction* selectedItem = menu.exec(pos);
     if(selectedItem){
@@ -133,7 +145,7 @@ MainWindow::View MainWindow::showViewContextMenu(const QPoint &pos)
             return MATCH_FILTER;
         else if(selectedItem->text() == "Threshold after MF")
             return MATCH_FILTER_THRESHOLD;
-        else if(selectedItem->text() == "Locate Plates")
+        else if(selectedItem->text() == "Original with LP locations")
             return PLATE_LOCALIZATION;
     }
 
@@ -208,6 +220,53 @@ void MainWindow::updateBothViews()
     updateRightView();
 }
 
+void MainWindow::drawLPRects()
+{
+    for(int i=0; i < lpRects.size(); i++){
+        if(i == currentLicensePlate)
+            rectangle(combined, lpRects[i], Scalar(0, 255, 255));
+        else
+            rectangle(combined, lpRects[i], Scalar(0, 0, 255));
+    }
+}
+
+void MainWindow::showCurrentLicensePlate()
+{
+    Mat lp = grayScale(lpRects[currentLicensePlate]).clone();
+    cv::resize(lp, lp, cv::Size(100. * lp.cols / lp.rows, 100));
+    QList<Rect> lpCharactersRects = Utils::getLPCharactersRects(lp);
+
+    if(lpCharactersRects.size() > 0){
+        QString recognizedCharacters;
+        foreach(Rect r, lpCharactersRects){
+            Mat ch = lp(r);
+            recognizedCharacters += Utils::recognizeCharacter(ch, patterns);
+        }
+
+        ui->recognizedText->setText(recognizedCharacters);
+    }
+    else
+        ui->recognizedText->setText("");
+
+    cvtColor(lp, lp, CV_GRAY2BGR);
+    foreach(const Rect &rect, lpCharactersRects)
+        rectangle(lp, rect, Scalar(0, 255, 0));
+
+    ui->lpView->showImage(lp);
+}
+
+void MainWindow::goToFrame(int index)
+{
+    currentFrame = index;
+    ui->backward->setEnabled(currentFrame >= 1);
+    ui->forward->setEnabled(currentFrame <= frameCount - 2);
+    capture.set(CV_CAP_PROP_POS_FRAMES, index);
+    capture >> frame;
+    if(!frame.empty())
+        processCurrentFrame();
+    ui->currentFrame->setValue(index + 1);
+}
+
 void MainWindow::processCurrentFrame()
 {
     if(!frame.empty()){
@@ -245,23 +304,19 @@ void MainWindow::processCurrentFrame()
             }
 
         // precise license plates rectangles
-        QLinkedList<Rect> lprects = Utils::getLPRects(matchFilterThreshold, sobelThreshold, rectAreaThreshold, rectRatioThreshold);
-        foreach(const Rect &rect, lprects)
-            rectangle(combined, rect, Scalar(0, 0, 255));
+        lpRects = Utils::getLPRects(matchFilterThreshold, sobelThreshold, rectAreaThreshold, rectRatioThreshold);
 
         //
-        if(lprects.size() > 0){
-            Mat roi = grayScale(lprects.first()).clone();
-            cv::resize(roi, roi, cv::Size(100. * roi.cols / roi.rows, 100));
-            QList<Rect> lpSignsRects = Utils::getLPSignsRects(roi);
-            cvtColor(roi, roi, CV_GRAY2BGR);
-            foreach(const Rect &rect, lpSignsRects)
-                rectangle(roi, rect, Scalar(0, 255, 0));
-            ui->cvwidget->showImage(roi);
+        if(lpRects.size() > 0){
+            currentLicensePlate = 0;
+            showCurrentLicensePlate();
         }
-        else
-            ui->cvwidget->clear();
+        else{
+            currentLicensePlate = -1;
+            ui->lpView->clear();
+        }
 
+        drawLPRects();
         updateBothViews();
     }
 }
@@ -382,7 +437,24 @@ void MainWindow::on_ratioThreshold_valueChanged(double arg1)
     processCurrentFrame();
 }
 
-void MainWindow::on_atc_valueChanged(int arg1)
+void MainWindow::on_forward_clicked()
 {
-    processCurrentFrame();
+    goToFrame(currentFrame + 1);
+}
+
+void MainWindow::on_backward_clicked()
+{
+    goToFrame(currentFrame - 1);
+}
+
+void MainWindow::on_currentFrame_valueChanged(int arg1)
+{
+    goToFrame(arg1 - 1);
+}
+
+void MainWindow::on_stop_clicked()
+{
+    timer->stop();
+    ui->playPause->setIcon(QIcon(":/icon/play"));
+    goToFrame(0);
 }
