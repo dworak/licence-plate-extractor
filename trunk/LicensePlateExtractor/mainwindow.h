@@ -3,7 +3,6 @@
 
 #include <QMainWindow>
 
-//#include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
 
 #include "utils.h"
@@ -51,6 +50,8 @@ private slots:
 
     void on_stop_clicked();
 
+    void on_open_clicked();
+
 private:
     Ui::MainWindow *ui;
     cv::VideoCapture capture;
@@ -59,7 +60,7 @@ private:
     int currentFrame;
     QList<cv::Rect> lpRects;
     int currentLicensePlate;
-    Patterns patterns;
+    Patterns patternsL, patternsR, patternsLR;
     QTimer *timer;
 
     // parameters
