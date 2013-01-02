@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QFileDialog>
 #include <QFontDatabase>
 #include <QTimer>
 
@@ -48,12 +49,12 @@ MainWindow::MainWindow(QWidget *parent) :
     leftView = PLATE_LOCALIZATION;
     rightView = ORIGINAL;
 
-    patterns = Patterns();
-    Utils::preparePatterns(patterns);
+    Utils::preparePatterns(patternsL, Utils::POWIAT_CHARACTERISTIC);
+    Utils::preparePatterns(patternsR, Utils::VEHICLE_CHARACTERISITC);
+    Utils::preparePatterns(patternsLR, Utils::ALL);
 
     capture = VideoCapture("../Sample/MVI_1022.AVI");
     frameCount = capture.get(CV_CAP_PROP_FRAME_COUNT);
-    capture.set(CV_CAP_PROP_POS_FRAMES, 100);
     currentFrame = -1;
     currentLicensePlate = -1;
 
@@ -234,13 +235,39 @@ void MainWindow::showCurrentLicensePlate()
 {
     Mat lp = grayScale(lpRects[currentLicensePlate]).clone();
     cv::resize(lp, lp, cv::Size(100. * lp.cols / lp.rows, 100));
-    QList<Rect> lpCharactersRects = Utils::getLPCharactersRects(lp);
+    Mat lpAfterAT;
+    QList<Rect> lpChRects = Utils::getLPCharactersRects(lp, lpAfterAT);
 
-    if(lpCharactersRects.size() > 0){
+    if(lpChRects.size() > 0){
         QString recognizedCharacters;
-        foreach(Rect r, lpCharactersRects){
-            Mat ch = lp(r);
-            recognizedCharacters += Utils::recognizeCharacter(ch, patterns);
+        if(lpChRects.size() < 7 || lpChRects.size() > 8){
+            foreach(Rect r, lpChRects){
+                Mat ch = lp(r);
+                recognizedCharacters += Utils::recognizeCharacter(ch, patternsLR);
+            }
+        }
+        else if(lpChRects.size() == 7){
+            int divisionPoint = lpChRects[2].x - lpChRects[1].br().x > lpChRects[3].x - lpChRects[2].br().x ? 2 : 3;
+            for(int i=0; i<divisionPoint; i++){
+                Mat ch = lp(lpChRects[i]);
+                recognizedCharacters += Utils::recognizeCharacter(ch, patternsL);
+            }
+            recognizedCharacters += " ";
+            for(int i=divisionPoint; i<7; i++){
+                Mat ch = lp(lpChRects[i]);
+                recognizedCharacters += Utils::recognizeCharacter(ch, patternsR);
+            }
+        }
+        else if(lpChRects.size() == 8){
+            for(int i=0; i<3; i++){
+                Mat ch = lp(lpChRects[i]);
+                recognizedCharacters += Utils::recognizeCharacter(ch, patternsL);
+            }
+            recognizedCharacters += " ";
+            for(int i=3; i<8; i++){
+                Mat ch = lp(lpChRects[i]);
+                recognizedCharacters += Utils::recognizeCharacter(ch, patternsR);
+            }
         }
 
         ui->recognizedText->setText(recognizedCharacters);
@@ -249,10 +276,11 @@ void MainWindow::showCurrentLicensePlate()
         ui->recognizedText->setText("");
 
     cvtColor(lp, lp, CV_GRAY2BGR);
-    foreach(const Rect &rect, lpCharactersRects)
+    foreach(const Rect &rect, lpChRects)
         rectangle(lp, rect, Scalar(0, 255, 0));
 
     ui->lpView->showImage(lp);
+    ui->lpBWView->showImage(lpAfterAT);
 }
 
 void MainWindow::goToFrame(int index)
@@ -306,7 +334,7 @@ void MainWindow::processCurrentFrame()
         // precise license plates rectangles
         lpRects = Utils::getLPRects(matchFilterThreshold, sobelThreshold, rectAreaThreshold, rectRatioThreshold);
 
-        //
+        // license plate characters
         if(lpRects.size() > 0){
             currentLicensePlate = 0;
             showCurrentLicensePlate();
@@ -314,6 +342,8 @@ void MainWindow::processCurrentFrame()
         else{
             currentLicensePlate = -1;
             ui->lpView->clear();
+            ui->lpBWView->clear();
+            ui->recognizedText->setText("");
         }
 
         drawLPRects();
@@ -332,6 +362,7 @@ void MainWindow::on_playPause_clicked()
         ui->playPause->setIcon(QIcon(":/icon/pause"));
     }
     playing = !playing;
+    ui->open->setEnabled(!playing);
 }
 
 void MainWindow::on_frameDelay_valueChanged(int arg1)
@@ -456,5 +487,22 @@ void MainWindow::on_stop_clicked()
 {
     timer->stop();
     ui->playPause->setIcon(QIcon(":/icon/play"));
+    ui->open->setEnabled(true);
     goToFrame(0);
+}
+
+void MainWindow::on_open_clicked()
+{
+    QString fileName = QFileDialog::getOpenFileName(this);
+    if(!fileName.isEmpty()){
+        capture = VideoCapture(fileName.toStdString());
+        frameCount = capture.get(CV_CAP_PROP_FRAME_COUNT);
+        currentFrame = -1;
+        currentLicensePlate = -1;
+
+        ui->currentFrame->setMaximum(frameCount);
+        ui->totalFrames->setText(QString::number(frameCount));
+
+        goToFrame(0);
+    }
 }

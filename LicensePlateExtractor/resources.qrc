@@ -5,6 +5,7 @@
         <file alias="backward">img/icon/skip_backward.png</file>
         <file alias="forward">img/icon/skip_forward.png</file>
         <file alias="stop">img/icon/stop.png</file>
+        <file alias="open">img/icon/folder.png</file>
     </qresource>
     <qresource prefix="/ch">
         <file alias="0">img/character/0.png</file>
