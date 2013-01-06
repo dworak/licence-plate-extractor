@@ -304,7 +304,7 @@ QList<cv::Rect> Utils::getLPCharactersRects(const cv::Mat &lp, cv::Mat &lpAfterA
     for(int i=0; i < best.size() - 1; i++){
         int diff = best[i + 1].x - best[i].br().x;
         if(diff > 0.9 * midWidth){
-            int num = diff / midWidth;
+            int num = diff / (1.2 * midWidth);
             for(int j=0; j < num; j++){
                 int lx = best[i].br().x + (j * diff) / num;
                 int rx = lx + diff / num;
