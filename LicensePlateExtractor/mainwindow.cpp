@@ -237,6 +237,13 @@ void MainWindow::showCurrentLicensePlate()
     cv::resize(lp, lp, cv::Size(100. * lp.cols / lp.rows, 100));
     Mat lpAfterAT;
     QList<Rect> lpChRects = Utils::getLPCharactersRects(lp, lpAfterAT);
+    QList<Rect> lpChRectsCopy = QList<Rect>();
+    lpChRectsCopy.append(lpChRects);
+
+    QMap<int, cv::Rect> map;
+        foreach(const cv::Rect &rect, lpChRects)
+            map.insert(rect.x, rect);
+        lpChRects = map.values();
 
     if(lpChRects.size() > 0){
         QString recognizedCharacters;
@@ -278,7 +285,7 @@ void MainWindow::showCurrentLicensePlate()
     cvtColor(lp, lp, CV_GRAY2BGR);
     int lastX = 0;
     Scalar color = Scalar(0, 255, 0);
-    foreach(const Rect &rect, lpChRects){
+    foreach(const Rect &rect, lpChRectsCopy){
         if(rect.x < lastX)
             color = Scalar(255, 0, 255);
         rectangle(lp, rect, color);
