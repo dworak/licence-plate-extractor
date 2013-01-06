@@ -298,6 +298,29 @@ QList<cv::Rect> Utils::getLPCharactersRects(const cv::Mat &lp, cv::Mat &lpAfterA
         }
     }
 
+    // estimate missing rectangles
+    int midWidth = 0.5875 * (midBottom - midTop);
+    QList<cv::Rect> newRects;
+    for(int i=0; i < best.size() - 1; i++){
+        int diff = best[i + 1].x - best[i].br().x;
+        if(diff > 0.9 * midWidth){
+            int num = diff / midWidth;
+            for(int j=0; j < num; j++){
+                int lx = best[i].br().x + (j * diff) / num;
+                int rx = lx + diff / num;
+                newRects.append(cv::Rect(lx + (rx - lx - midWidth) / 2, midTop, midWidth, midBottom - midTop));
+            }
+        }
+    }
+    best.append(newRects);
+
+    // once again sort rectangles
+//    QMap<int, cv::Rect> map;
+//    foreach(const cv::Rect &rect, best)
+//        map.insert(rect.x, rect);
+//    best = map.values();
+
+
     return best;
 }
 

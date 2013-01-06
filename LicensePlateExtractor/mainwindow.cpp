@@ -276,8 +276,14 @@ void MainWindow::showCurrentLicensePlate()
         ui->recognizedText->setText("");
 
     cvtColor(lp, lp, CV_GRAY2BGR);
-    foreach(const Rect &rect, lpChRects)
-        rectangle(lp, rect, Scalar(0, 255, 0));
+    int lastX = 0;
+    Scalar color = Scalar(0, 255, 0);
+    foreach(const Rect &rect, lpChRects){
+        if(rect.x < lastX)
+            color = Scalar(255, 0, 255);
+        rectangle(lp, rect, color);
+        lastX = rect.x;
+    }
 
     ui->lpView->showImage(lp);
     ui->lpBWView->showImage(lpAfterAT);
