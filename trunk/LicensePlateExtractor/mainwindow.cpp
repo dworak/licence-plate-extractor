@@ -338,7 +338,7 @@ void MainWindow::processCurrentFrame()
         // combined with original
         combined = frame.clone();
         for (int y=0;y<combined.rows;y++)
-            for (int x=9;x<combined.cols;x++)
+            for (int x=0;x<combined.cols;x++)
             {
                 int G = ((uchar *)(matchFilterThreshold.data +y*matchFilterThreshold.step))[x*matchFilterThreshold.channels() +1];
                 if (G==255)
