@@ -59,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent) :
     currentLicensePlate = -1;
 
     ui->currentFrame->setMaximum(frameCount);
+    ui->playerSlider->setMaximum(frameCount);
     ui->totalFrames->setText(QString::number(frameCount));
 
     goToFrame(0);
@@ -80,6 +81,7 @@ void MainWindow::nextFrame()
         ui->leftView->clear();
         ui->rightView->clear();
         ui->playPause->setIcon(QIcon(":/icon/play"));
+        ui->open->setEnabled(true);
         currentFrame = -1;
         goToFrame(0);
     }
@@ -298,14 +300,17 @@ void MainWindow::showCurrentLicensePlate()
 
 void MainWindow::goToFrame(int index)
 {
-    currentFrame = index;
-    ui->backward->setEnabled(currentFrame >= 1);
-    ui->forward->setEnabled(currentFrame <= frameCount - 2);
-    capture.set(CV_CAP_PROP_POS_FRAMES, index);
-    capture >> frame;
-    if(!frame.empty())
-        processCurrentFrame();
-    ui->currentFrame->setValue(index + 1);
+    if(index != currentFrame){
+        currentFrame = index;
+        ui->backward->setEnabled(currentFrame >= 1);
+        ui->forward->setEnabled(currentFrame <= frameCount - 2);
+        capture.set(CV_CAP_PROP_POS_FRAMES, index);
+        capture >> frame;
+        if(!frame.empty())
+            processCurrentFrame();
+        ui->currentFrame->setValue(index + 1);
+        ui->playerSlider->setValue(index + 1);
+    }
 }
 
 void MainWindow::processCurrentFrame()
@@ -514,8 +519,14 @@ void MainWindow::on_open_clicked()
         currentLicensePlate = -1;
 
         ui->currentFrame->setMaximum(frameCount);
+        ui->playerSlider->setMaximum(frameCount);
         ui->totalFrames->setText(QString::number(frameCount));
 
         goToFrame(0);
     }
+}
+
+void MainWindow::on_playerSlider_valueChanged(int value)
+{
+    goToFrame(value - 1);
 }
