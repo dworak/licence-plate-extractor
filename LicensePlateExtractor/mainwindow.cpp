@@ -238,9 +238,10 @@ void MainWindow::showCurrentLicensePlate()
     Mat lp = grayScale(lpRects[currentLicensePlate]).clone();
     cv::resize(lp, lp, cv::Size(100. * lp.cols / lp.rows, 100));
     Mat lpAfterAT;
+    lp = Utils::getLPInterior(lp);
     QList<Rect> lpChRects = Utils::getLPCharactersRects(lp, lpAfterAT);
-    QList<Rect> lpChRectsCopy = QList<Rect>();
-    lpChRectsCopy.append(lpChRects);
+    QList<Rect> lpChRectsCopy = QList<Rect>(lpChRects);
+    //lpChRectsCopy.append(lpChRects);
 
     QMap<int, cv::Rect> map;
         foreach(const cv::Rect &rect, lpChRects)
@@ -283,6 +284,8 @@ void MainWindow::showCurrentLicensePlate()
     }
     else
         ui->recognizedText->setText("");
+
+
 
     cvtColor(lp, lp, CV_GRAY2BGR);
     int lastX = 0;
