@@ -2,6 +2,8 @@
 
 #include <QDebug>
 
+using namespace cv;
+
 cv::Mat Utils::QImage2Mat(const QImage &img)
 {
     return cv::Mat(img.height(), img.width(), CV_8UC1, (uchar*)img.bits(), img.bytesPerLine()).clone();
@@ -78,7 +80,33 @@ cv::Mat Utils::getMatchFilterKernel(int m, int n, double sd, double A, double B)
     return result;
 }
 
-cv::Rect Utils::getLPInterior(const cv::Mat &lp)
+Mat Utils::getLPInterior(const Mat &lp)
+{
+    RotatedRect interior;
+    if(Utils::getLPRotInteriorRect(lp, interior)){
+        Mat M, rotated, cropped;
+        float angle = interior.angle;
+        Size rect_size = interior.size;
+        if (interior.angle < -45.) {
+            angle += 90.0;
+            int tmp = rect_size.width;
+            rect_size.width = rect_size.height;
+            rect_size.height = tmp;
+        }
+        // get the rotation matrix
+        M = getRotationMatrix2D(interior.center, angle, 1.0);
+        // perform the affine transformation
+        warpAffine(lp, rotated, M, lp.size(), INTER_CUBIC);
+        // crop the resulting image
+        getRectSubPix(rotated, rect_size, interior.center, cropped);
+
+        return cropped;
+    }
+    else
+        return lp;
+}
+
+cv::Rect Utils::getLPInteriorRect(const cv::Mat &lp)
 {
     cv::Mat _lp;
     threshold(lp, _lp, Utils::getLPThreshold(lp, 1./4, 1./4) - 10, 255, cv::THRESH_BINARY);
@@ -102,6 +130,36 @@ cv::Rect Utils::getLPInterior(const cv::Mat &lp)
         return *innerRect;
     else
         return cv::Rect();
+}
+
+bool Utils::getLPRotInteriorRect(const cv::Mat &lp, cv::RotatedRect &res)
+{
+    cv::Mat _lp;
+    threshold(lp, _lp, Utils::getLPThreshold(lp, 1./4, 1./4) - 10, 255, cv::THRESH_BINARY);
+    //adaptiveThreshold(lp, _lp, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, Utils::makeOdd(lp.rows), -10);
+
+    std::vector< std::vector<cv::Point> > contours;
+    findContours(_lp, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+    QList<cv::Rect> rects;
+    for(unsigned i=0; i<contours.size(); i++)
+        rects.append(boundingRect(contours[i]));
+
+    int innerRectI = -1;
+    double minArea = _lp.cols * _lp.rows;
+    for(int i=0; i < rects.size(); i++){
+        const cv::Rect &rect = rects[i];
+        if(rect.width > 0.5 * _lp.cols && rect.height > 0.5 * _lp.rows && rect.area() < minArea){
+            minArea = rect.area();
+            innerRectI = i;
+        }
+    }
+
+    if(innerRectI > -1){
+        res = cv::minAreaRect(contours[innerRectI]);
+        return true;
+    }
+    else
+        return false;
 }
 
 // finds rectangles bounding license plates
@@ -222,9 +280,14 @@ QList<cv::Rect> Utils::getLPCharactersRects(const cv::Mat &lp, int C, cv::Mat &l
         roi = roi(cv::Range(0, roi.rows / 2), cv::Range::all());
         cv::Scalar mean, stddev;
         cv::meanStdDev(roi, mean, stddev);
-        if(stddev[0] < 20 || first.x <= lp.cols / 10)
+        if(stddev[0] < 20 || first.x <= 3)
             sortedRects.removeFirst();
     }
+
+    // remove false right outermost rectangle if any
+    if(sortedRects.size() > 0)
+        if(sortedRects.last().x >= lp.cols - 3)
+            sortedRects.removeLast();
 
     // remove rectangles with very low top y or very high bottom y
     QList<int> tops, bottoms;
@@ -250,7 +313,7 @@ QList<cv::Rect> Utils::getLPCharactersRects(const cv::Mat &lp, cv::Mat &lpAfterA
     // find best set of rectangles
     QMap< double, QList<cv::Rect> > candidates;
     QMap<double, cv::Mat> lpsAfterAT;
-    for(int i = -15; i <= 15; i+=5){
+    for(int i = 10; i <= 20; i+=5){
         cv::Mat lpAfterAT;
         QList<cv::Rect> candidate = getLPCharactersRects(lp, i, lpAfterAT);
         double totalArea = 0;
@@ -273,7 +336,7 @@ QList<cv::Rect> Utils::getLPCharactersRects(const cv::Mat &lp, cv::Mat &lpAfterA
     int midTop, midBottom;
     midTop = tops[(tops.size() - 1) / 2];
     midBottom = bottoms[bottoms.size() / 2];
-    int margin = (midBottom - midTop) / 5;
+    int margin = (midBottom - midTop) / 10;
     for(int i=0; i < best.size(); i++){
         if(best[i].y > midTop + margin){
             best[i].height += best[i].y - midTop;
