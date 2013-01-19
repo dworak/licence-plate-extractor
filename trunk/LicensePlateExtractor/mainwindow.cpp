@@ -297,7 +297,13 @@ void MainWindow::showCurrentLicensePlate()
         lastX = rect.x;
     }
 
+        Mat hHist, vHist;
+        reduce(lpAfterAT, hHist, 0, CV_REDUCE_AVG);
+        reduce(lpAfterAT, vHist, 1, CV_REDUCE_AVG);
+
     ui->lpView->showImage(lp);
+    ui->hHistView->showImage(Utils::getHistImage(hHist, 0, 32));
+    ui->vHistView->showImage(Utils::getHistImage(vHist, 1, 32));
     ui->lpBWView->showImage(lpAfterAT);
 }
 
