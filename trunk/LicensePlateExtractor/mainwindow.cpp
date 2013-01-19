@@ -239,7 +239,8 @@ void MainWindow::showCurrentLicensePlate()
     cv::resize(lp, lp, cv::Size(100. * lp.cols / lp.rows, 100));
     Mat lpAfterAT;
     lp = Utils::getLPInterior(lp);
-    QList<Rect> lpChRects = Utils::getLPCharactersRects(lp, lpAfterAT);
+    Mat hHist;
+    QList<Rect> lpChRects = Utils::getLPCharactersRectsByHist(lp, lpAfterAT, hHist);
     QList<Rect> lpChRectsCopy = QList<Rect>(lpChRects);
     //lpChRectsCopy.append(lpChRects);
 
@@ -298,13 +299,19 @@ void MainWindow::showCurrentLicensePlate()
         lastX = rect.x;
     }
 
-        Mat hHist, vHist;
-        reduce(lpAfterAT, hHist, 0, CV_REDUCE_AVG);
-        reduce(lpAfterAT, vHist, 1, CV_REDUCE_AVG);
+
+    Mat vHist;
+    //reduce(lpAfterAT, hHist, 0, CV_REDUCE_AVG);
+    reduce(lpAfterAT, vHist, 1, CV_REDUCE_AVG);
 
     ui->lpView->showImage(lp);
-    ui->hHistView->showImage(Utils::getHistImage(hHist, 0, 32));
-    ui->vHistView->showImage(Utils::getHistImage(vHist, 1, 32));
+    //int th[2];
+    //minMaxIdx(hHist(Range::all(), Range(hHist.cols * 0.2, hHist.cols * 0.8)), NULL, NULL, th);
+    //threshold(hHist, hHist, th[0] + ui->move->value(), 255, THRESH_BINARY);
+    //adaptiveThreshold(hHist, hHist, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, ui->size->value(), ui->move->value());
+    Mat horiz = Utils::getHistImage(hHist, 0, 64);
+    ui->hHistView->showImage(horiz);
+    //ui->vHistView->showImage(Utils::getHistImage(vHist, 1, 64));
     ui->lpBWView->showImage(lpAfterAT);
 }
 
@@ -370,7 +377,8 @@ void MainWindow::showCurrentLicensePlate2()
     cv::resize(lp, lp, cv::Size(100. * lp.cols / lp.rows, 100));
     Mat lpAfterAT;
     lp = Utils::getLPInterior(lp);
-    QList<Rect> lpChRects = Utils::getLPCharactersRects(lp, lpAfterAT);
+    Mat hHist;
+    QList<Rect> lpChRects = Utils::getLPCharactersRectsByHist(lp, lpAfterAT, hHist);
     detectedplate plate = detection.GetPlate(lpRects[currentLicensePlate],currentFrame);
 
     QList<Rect> lpChRectsCopy = QList<Rect>(lpChRects);
@@ -396,14 +404,9 @@ void MainWindow::showCurrentLicensePlate2()
         lastX = rect.x;
     }
 
-        Mat hHist, vHist;
-        reduce(lpAfterAT, hHist, 0, CV_REDUCE_AVG);
-        reduce(lpAfterAT, vHist, 1, CV_REDUCE_AVG);
     ui->lpView->showImage(lp);
     ui->hHistView->showImage(Utils::getHistImage(hHist, 0, 32));
-    ui->vHistView->showImage(Utils::getHistImage(vHist, 1, 32));
     ui->lpBWView->showImage(lpAfterAT);
-
 }
 
 void MainWindow::goToFrame(int index)
@@ -480,6 +483,7 @@ void MainWindow::processCurrentFrame()
             currentLicensePlate = -1;
             ui->lpView->clear();
             ui->lpBWView->clear();
+            ui->hHistView->clear();
             ui->recognizedText->setText("");
         }
 
