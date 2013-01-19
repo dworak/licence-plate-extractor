@@ -80,6 +80,22 @@ cv::Mat Utils::getMatchFilterKernel(int m, int n, double sd, double A, double B)
     return result;
 }
 
+Mat Utils::getHistImage(const Mat &hist, int dim, int size)
+{
+    if(dim == 0){
+        Mat histImg = Mat::zeros(size, hist.cols, CV_8U);
+        for(int i=0; i < hist.cols; i++)
+            line(histImg, Point(i, size - 1), Point(i, size - 1 - hist.at<uchar>(i) * size / 256), Scalar(255, 255, 255));
+        return histImg;
+    }
+    else{
+        Mat histImg = Mat::zeros(hist.rows, size, CV_8U);
+        for(int i=0; i < hist.rows; i++)
+            line(histImg, Point(0, i), Point(hist.at<uchar>(i) * size / 256, i), Scalar(255, 255, 255));
+        return histImg;
+    }
+}
+
 Mat Utils::getLPInterior(const Mat &lp)
 {
     RotatedRect interior;

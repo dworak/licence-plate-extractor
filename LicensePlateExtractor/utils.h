@@ -18,6 +18,7 @@ public:
     enum CharacterSubset{POWIAT_CHARACTERISTIC, VEHICLE_CHARACTERISITC, ALL};
     static void preparePatterns(Patterns &patterns, CharacterSubset characterSubset);
     static cv::Mat getMatchFilterKernel(int m, int n, double sd, double A, double B);
+    static cv::Mat getHistImage(const cv::Mat &hist, int dim, int size);
     static cv::Mat getLPInterior(const cv::Mat &lp);
     static cv::Rect getLPInteriorRect(const cv::Mat &lp);   // deprecated
     static bool getLPRotInteriorRect(const cv::Mat &lp, cv::RotatedRect &res);
