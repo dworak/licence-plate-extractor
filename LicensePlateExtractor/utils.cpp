@@ -365,17 +365,51 @@ QList<cv::Rect> Utils::getLPCharactersRects(const cv::Mat &lp, cv::Mat &lpAfterA
     // extend small widths
     for(int i=0; i < best.size(); i++){
         if((double)best[i].width / best[i].height < 0.5){
-            int newWidth = 0.5875 * best[i].height;
-            best[i].x = best[i].x - (newWidth - best[i].width) / 2;
-            best[i].width = newWidth;
-            if(best[i].x < 0){
-                best[i].width += best[i].x;
-                best[i].x = 0;
+            if (i==best.size()-1 || best[i+1].x-(best[i].x+best[i].width)>3 || (double)best[i].width / best[i].height >=0.6)
+            {
+                int newWidth = 0.5875 * best[i].height;
+                best[i].x = best[i].x - (newWidth - best[i].width) / 2;
+                best[i].width = newWidth;
+                if(best[i].x < 0){
+                    best[i].width += best[i].x;
+                    best[i].x = 0;
+                }
+                if(best[i].br().x > lp.cols)
+                    best[i].width -= best[i].br().x - lp.cols;
             }
-            if(best[i].br().x > lp.cols)
-                best[i].width -= best[i].br().x - lp.cols;
+            else
+            {
+                best[i].width = best[i+1].x+best[i+1].width - best[i].x;
+                if (best[i+1].y<best[i].y)
+                {
+                    best[i].height = best[i].height + best[i].y - best[i+1].y;
+                    best[i].y =  best[i+1].y;
+                }
+                if (best[i+1].y+best[i+1].height>best[i].y+best[i].height)
+                    best[i].height = best[i+1].y+best[i+1].height-best[i].y;
+            }
         }
     }
+
+
+    // delete overlapping rectangles
+    for(QList<cv::Rect>::iterator rect1 = best.begin(); rect1 != best.end();){
+        QList<cv::Rect> overlapping;
+        for(QList<cv::Rect>::iterator rect2 = rect1 + 1; rect2 != best.end(); rect2++)
+            if(rect1 != rect2){
+                cv::Rect intersection = *rect1 & *rect2;
+                if(intersection.area() > 0)
+                    overlapping.append(*rect2);
+            }
+        foreach(const cv::Rect &r, overlapping){
+            best.removeOne(r);
+        }
+        rect1++;
+    }
+
+
+
+
 
     // estimate missing rectangles
     int midWidth = 0.5875 * (midBottom - midTop);
