@@ -49,7 +49,6 @@ private slots:
     void on_currentFrame_valueChanged(int arg1);
     void on_stop_clicked();
     void on_open_clicked();
-
     void on_playerSlider_valueChanged(int value);
 
 private:

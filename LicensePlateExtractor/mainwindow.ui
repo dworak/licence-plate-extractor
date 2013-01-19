@@ -656,13 +656,13 @@
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout">
-               <item row="0" column="1">
+               <item row="0" column="0">
                 <widget class="CVImageWidget" name="lpBWView" native="true"/>
                </item>
-               <item row="0" column="2">
+               <item row="0" column="1">
                 <widget class="CVImageWidget" name="lpView" native="true"/>
                </item>
-               <item row="0" column="3">
+               <item row="0" column="2">
                 <widget class="QLabel" name="recognizedText">
                  <property name="text">
                   <string>recognized text</string>
@@ -675,11 +675,8 @@
                  </property>
                 </widget>
                </item>
-               <item row="1" column="1">
+               <item row="1" column="0">
                 <widget class="CVImageWidget" name="hHistView" native="true"/>
-               </item>
-               <item row="0" column="0">
-                <widget class="CVImageWidget" name="vHistView" native="true"/>
                </item>
               </layout>
              </widget>

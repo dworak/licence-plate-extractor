@@ -122,6 +122,17 @@ Mat Utils::getLPInterior(const Mat &lp)
         return lp;
 }
 
+Rect Utils::trimLPInterior(const Mat &lp)
+{
+    Mat hist;
+    reduce(lp, hist, 1, CV_REDUCE_AVG);
+    int upper[2], bottom[2];
+    minMaxIdx(hist(Range(0, hist.rows / 2), Range::all()), NULL, NULL, upper);
+    minMaxIdx(hist(Range(hist.rows / 2, hist.rows), Range::all()), NULL, NULL, bottom);
+    bottom[0] += hist.rows / 2;
+    return Rect(0, upper[0], lp.cols, bottom[0] - upper[0]);
+}
+
 cv::Rect Utils::getLPInteriorRect(const cv::Mat &lp)
 {
     cv::Mat _lp;
@@ -329,7 +340,7 @@ QList<cv::Rect> Utils::getLPCharactersRects(const cv::Mat &lp, cv::Mat &lpAfterA
     // find best set of rectangles
     QMap< double, QList<cv::Rect> > candidates;
     QMap<double, cv::Mat> lpsAfterAT;
-    for(int i = 10; i <= 20; i+=5){
+    for(int i = 10; i <= 10; i+=5){
         cv::Mat lpAfterAT;
         QList<cv::Rect> candidate = getLPCharactersRects(lp, i, lpAfterAT);
         double totalArea = 0;
@@ -433,6 +444,164 @@ QList<cv::Rect> Utils::getLPCharactersRects(const cv::Mat &lp, cv::Mat &lpAfterA
 //        map.insert(rect.x, rect);
 //    best = map.values();
 
+
+    return best;
+}
+
+QList<Rect> Utils::getLPCharactersRectsByHist(Mat &lp, Mat &lpAfterAT, Mat &hHist)
+{
+    // preprocess
+    adaptiveThreshold(lp, lpAfterAT, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY_INV, Utils::makeOdd(lp.rows), 10);
+    Rect trimmed = Utils::trimLPInterior(lpAfterAT);
+    lpAfterAT = lpAfterAT(trimmed);
+    lp = lp(trimmed);
+
+    // get horizontal histogram
+    reduce(lpAfterAT, hHist, 0, CV_REDUCE_AVG);
+
+    // find rects horizontally
+    QList<Rect> rects = getLPChHRects(hHist, 20, lp.rows);
+
+    // find rects vertically
+//    for(int i=0; i < rects.size(); i++)
+//        rects[i] = getLPChVRect(lpAfterAT(rects[i]), rects[i]);
+
+    // split too wide rects
+    QList<Rect> afterSplit;
+    QList<int> widths;
+    for(int i=0; i < rects.size(); i++)
+        widths.append(rects[i].width);
+    qSort(widths);
+    int midWidth = widths[widths.size() / 2];
+    for(int i=0; i < rects.size(); i++)
+        if(rects[i].width > 1.3 * midWidth){
+            Mat hist = hHist(Range::all(), Range(rects[i].x, rects[i].x + rects[i].width));
+            QList<Rect> newRects;
+            int shift = 20;
+            do{
+                shift += 1;
+                newRects = getLPChHRects(hist, shift, lp.rows);
+            }while(newRects.size() <= 1);
+            // shift new rects
+            for(int j=0; j < newRects.size(); j++)
+                newRects[j].x += rects[i].x;
+            afterSplit.append(newRects);
+            rects.removeAt(i);
+        }
+    rects.append(afterSplit);
+
+    // remove too narrow rects
+    for(int i=0; i < rects.size(); i++)
+        if(rects[i].width < 0.5 * midWidth)
+            rects.removeAt(i);
+
+    // sort rects
+    QMap<int, cv::Rect> map;
+    foreach(const cv::Rect &rect, rects)
+        map.insert(rect.x, rect);
+    rects = map.values();
+
+    // remove false left outermost rectangle if any
+    if(rects.size() > 0){
+        Rect &first = rects.first();
+        Mat roi = lp(first);
+        roi = roi(cv::Range(0, roi.rows / 2), cv::Range::all());
+        Scalar roiMean, lpMean, sd;
+        meanStdDev(roi, roiMean, sd);
+        meanStdDev(lp, lpMean, sd);
+        if(roiMean[0] < 0.8 * lpMean[0])
+            rects.removeFirst();
+    }
+
+    // find widest space
+    int spaceWidth = 0, spacePos;
+    for(int i=0; i < rects.size() - 1; i++){
+        int width = rects[i + 1].x - rects[i].br().x;
+        if(width > spaceWidth){
+            spaceWidth = width;
+            spacePos = i;
+        }
+    }
+
+    // remove false rects on the right
+    while(rects.size() > spacePos + 6)
+        rects.removeLast();
+
+    return rects;
+}
+
+QList<Rect> Utils::getLPChHRects(const Mat &hHist, int thres, int lpHeight)
+{
+    double th[2];
+    minMaxIdx(hHist(Range::all(), Range(hHist.cols * 0.2, hHist.cols * 0.8)), th, NULL);
+    Mat _hHist;
+    threshold(hHist, _hHist, th[0] + thres, 255, THRESH_BINARY);
+    morphologyEx(_hHist, _hHist, cv::MORPH_CLOSE, Mat::ones(1, 2, CV_8U), cv::Point(-1, -1), 1);
+
+    // find rects horizontally
+    QList<Rect> rects;
+    int beginning, width;
+    int prev = 0;
+    for(int i=0; i < _hHist.cols; i++){
+        if(_hHist.at<int>(i)){
+            if(prev)        // ww
+                width++;
+            else{           // bw
+                beginning = i;
+                width = 1;
+            }
+        }
+        else{
+            if(prev && width > _hHist.cols / 20)        // wb
+                rects.append(Rect(beginning, 0, width, lpHeight));
+            else{           // bb
+            }
+        }
+        prev = _hHist.at<int>(i);
+    }
+    if(prev && width > _hHist.cols / 20)        // wb
+        rects.append(Rect(beginning, 0, width, lpHeight));
+
+    return rects;
+}
+
+Rect Utils::getLPChVRect(const Mat &ch, const cv::Rect &rect)
+{
+    Mat vHist;
+    reduce(ch, vHist, 1, CV_REDUCE_AVG);
+
+    // find rects vertically
+    QList<Rect> rects;
+    int beginning, height;
+    int prev = 0;
+    for(int i=0; i < vHist.rows; i++){
+        if(vHist.at<int>(i)){
+            if(prev)        // ww
+                height++;
+            else{           // bw
+                beginning = i;
+                height = 1;
+            }
+        }
+        else{
+            if(prev)        // wb
+                rects.append(Rect(rect.x, beginning, rect.width, height));
+            else{           // bb
+            }
+        }
+        prev = vHist.at<int>(i);
+    }
+    if(prev)        // wb
+        rects.append(Rect(rect.x, beginning, rect.width, height));
+
+    // find rect with largest height
+    int val = 0;
+    Rect best;
+    for(int i=0; i < rects.size(); i++)
+        if(rects[i].height > val){
+            val = rects[i].height;
+            best = rects[i];
+        }
 
     return best;
 }
