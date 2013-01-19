@@ -321,7 +321,9 @@ QList<QPair<char,double> > MainWindow::getPlateCharsAndProbabs(cv::Rect plate, i
     cv::resize(lp, lp, cv::Size(100. * lp.cols / lp.rows, 100));
     Mat lpAfterAT;
     lp = Utils::getLPInterior(lp);
-    QList<Rect> lpChRects = Utils::getLPCharactersRects(lp, lpAfterAT);
+    Mat hHist;
+    QList<Rect> lpChRects = Utils::getLPCharactersRectsByHist(lp, lpAfterAT, hHist);
+    //QList<Rect> lpChRects = Utils::getLPCharactersRects(lp, lpAfterAT);
     //QList<Rect> lpChRectsCopy = QList<Rect>(lpChRects);
     //lpChRectsCopy.append(lpChRects);
     QList<QPair<char,double> > list;
