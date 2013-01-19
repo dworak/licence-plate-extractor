@@ -481,7 +481,8 @@ QList<Rect> Utils::getLPCharactersRectsByHist(Mat &lp, Mat &lpAfterAT, Mat &hHis
             do{
                 shift += 1;
                 newRects = getLPChHRects(hist, shift, lp.rows);
-            }while(newRects.size() <= 1);
+            }while(newRects.size() <= 1 && shift < 50);
+
             // shift new rects
             for(int j=0; j < newRects.size(); j++)
                 newRects[j].x += rects[i].x;
