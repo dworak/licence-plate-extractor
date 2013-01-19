@@ -44,8 +44,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QFontDatabase::addApplicationFont(":/font/lpfont");
     ui->recognizedText->setText("");
-    ui->recognizedText->setFont(QFont("arklas Tablica samochodowa", 24));
-
+    ui->recognizedText->setFont(QFont("arklas Tablica samochodowa", 18));
+    ui->bestrecognition->setFont(QFont("arklas Tablica samochodowa", 24));
     leftView = PLATE_LOCALIZATION;
     rightView = ORIGINAL;
 
@@ -390,9 +390,59 @@ void MainWindow::showCurrentLicensePlate2()
         foreach(const cv::Rect &rect, lpChRects)
             map.insert(rect.x, rect);
         lpChRects = map.values();
-    QString recognizedCharacters = plate.toString();
+    QString bestrekogn = plate.toString();
     //qDebug() <<recognizedCharacters;
-    ui->recognizedText->setText(recognizedCharacters);
+    ui->bestrecognition->setText(bestrekogn);
+
+
+
+    if(lpChRects.size() > 0){
+        QString recognizedCharacters;
+        if(lpChRects.size() < 7 || lpChRects.size() > 8){
+            foreach(Rect r, lpChRects){
+                Mat ch = lp(r);
+                recognizedCharacters += Utils::recognizeCharacter(ch, patternsLR);
+            }
+        }
+        else if(lpChRects.size() == 7){
+            int divisionPoint = lpChRects[2].x - lpChRects[1].br().x > lpChRects[3].x - lpChRects[2].br().x ? 2 : 3;
+            for(int i=0; i<divisionPoint; i++){
+                Mat ch = lp(lpChRects[i]);
+                recognizedCharacters += Utils::recognizeCharacter(ch, patternsL);
+            }
+            recognizedCharacters += " ";
+            for(int i=divisionPoint; i<7; i++){
+                Mat ch = lp(lpChRects[i]);
+                recognizedCharacters += Utils::recognizeCharacter(ch, patternsR);
+            }
+        }
+        else if(lpChRects.size() == 8){
+            for(int i=0; i<3; i++){
+                Mat ch = lp(lpChRects[i]);
+                recognizedCharacters += Utils::recognizeCharacter(ch, patternsL);
+            }
+            recognizedCharacters += " ";
+            for(int i=3; i<8; i++){
+                Mat ch = lp(lpChRects[i]);
+                recognizedCharacters += Utils::recognizeCharacter(ch, patternsR);
+            }
+        }
+
+        ui->recognizedText->setText(recognizedCharacters);
+    //    qDebug() << detection;
+    }
+    else
+        ui->recognizedText->setText("");
+
+
+
+
+
+
+
+
+
+
 
 
 
