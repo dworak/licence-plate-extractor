@@ -365,7 +365,7 @@ QList<cv::Rect> Utils::getLPCharactersRects(const cv::Mat &lp, cv::Mat &lpAfterA
     // extend small widths
     for(int i=0; i < best.size(); i++){
         if((double)best[i].width / best[i].height < 0.5){
-            if (i==best.size()-1 || best[i+1].x-(best[i].x+best[i].width)>3 || (double)best[i].width / best[i].height >=0.6)
+            if (i==best.size()-1 || best[i+1].x-(best[i].x+best[i].width)>2 || (double)best[i].width / best[i].height >=0.55)
             {
                 int newWidth = 0.5875 * best[i].height;
                 best[i].x = best[i].x - (newWidth - best[i].width) / 2;
