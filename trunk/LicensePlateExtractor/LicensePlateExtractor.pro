@@ -12,11 +12,15 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    utils.cpp
+    utils.cpp \
+    detectedframe.cpp \
+    detectedplate.cpp
 
 HEADERS  += mainwindow.h \
     utils.h \
-    cvimagewidget.h
+    cvimagewidget.h \
+    detectedframe.h \
+    detectedplate.h
 
 FORMS    += mainwindow.ui
 

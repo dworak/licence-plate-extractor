@@ -95,7 +95,7 @@ void MainWindow::showLicensePlate(int x, int y)
             i++;
         if(i < lpRects.size()){
             currentLicensePlate = i;
-            showCurrentLicensePlate();
+            showCurrentLicensePlate2();
             drawLPRects();
         }
     }
@@ -281,6 +281,7 @@ void MainWindow::showCurrentLicensePlate()
         }
 
         ui->recognizedText->setText(recognizedCharacters);
+    //    qDebug() << detection;
     }
     else
         ui->recognizedText->setText("");
@@ -305,6 +306,104 @@ void MainWindow::showCurrentLicensePlate()
     ui->hHistView->showImage(Utils::getHistImage(hHist, 0, 32));
     ui->vHistView->showImage(Utils::getHistImage(vHist, 1, 32));
     ui->lpBWView->showImage(lpAfterAT);
+}
+
+QList<QPair<char,double> > MainWindow::getPlateCharsAndProbabs(cv::Rect plate, int& divisionPoint)
+{
+    Mat lp = grayScale(plate).clone();
+    cv::resize(lp, lp, cv::Size(100. * lp.cols / lp.rows, 100));
+    Mat lpAfterAT;
+    lp = Utils::getLPInterior(lp);
+    QList<Rect> lpChRects = Utils::getLPCharactersRects(lp, lpAfterAT);
+    //QList<Rect> lpChRectsCopy = QList<Rect>(lpChRects);
+    //lpChRectsCopy.append(lpChRects);
+    QList<QPair<char,double> > list;
+    QMap<int, cv::Rect> map;
+        foreach(const cv::Rect &rect, lpChRects)
+            map.insert(rect.x, rect);
+        lpChRects = map.values();
+    divisionPoint=-1;
+    if(lpChRects.size() > 0){
+        if(lpChRects.size() < 7 || lpChRects.size() > 8){
+            foreach(Rect r, lpChRects){
+                Mat ch = lp(r);
+                QPair <char,double> result = Utils::recognizeCharacterWithProbab(ch, patternsLR);
+                list.append((result));
+            }
+        }
+        else if(lpChRects.size() == 7){
+            divisionPoint = lpChRects[2].x - lpChRects[1].br().x > lpChRects[3].x - lpChRects[2].br().x ? 2 : 3;
+            for(int i=0; i<divisionPoint; i++){
+                Mat ch = lp(lpChRects[i]);
+                QPair <char,double> result = Utils::recognizeCharacterWithProbab(ch, patternsL);
+                list.append((result));
+            }
+            for(int i=divisionPoint; i<7; i++){
+                Mat ch = lp(lpChRects[i]);
+                QPair <char,double> result = Utils::recognizeCharacterWithProbab(ch, patternsR);
+                list.append((result));
+            }
+        }
+        else if(lpChRects.size() == 8){
+            divisionPoint=3;
+            for(int i=0; i<3; i++){
+                Mat ch = lp(lpChRects[i]);
+                QPair <char,double> result = Utils::recognizeCharacterWithProbab(ch, patternsL);
+                list.append((result));
+            }
+            for(int i=3; i<8; i++){
+                Mat ch = lp(lpChRects[i]);
+                QPair <char,double> result = Utils::recognizeCharacterWithProbab(ch, patternsR);
+                list.append((result));
+            }
+        }
+    }
+    return list;
+
+}
+
+
+
+void MainWindow::showCurrentLicensePlate2()
+{
+   Mat lp = grayScale(lpRects[currentLicensePlate]).clone();
+    cv::resize(lp, lp, cv::Size(100. * lp.cols / lp.rows, 100));
+    Mat lpAfterAT;
+    lp = Utils::getLPInterior(lp);
+    QList<Rect> lpChRects = Utils::getLPCharactersRects(lp, lpAfterAT);
+    detectedplate plate = detection.GetPlate(lpRects[currentLicensePlate],currentFrame);
+
+    QList<Rect> lpChRectsCopy = QList<Rect>(lpChRects);
+    //lpChRectsCopy.append(lpChRects);
+
+    QMap<int, cv::Rect> map;
+        foreach(const cv::Rect &rect, lpChRects)
+            map.insert(rect.x, rect);
+        lpChRects = map.values();
+    QString recognizedCharacters = plate.toString();
+    //qDebug() <<recognizedCharacters;
+    ui->recognizedText->setText(recognizedCharacters);
+
+
+
+    cvtColor(lp, lp, CV_GRAY2BGR);
+    int lastX = 0;
+    Scalar color = Scalar(0, 255, 0);
+    foreach(const Rect &rect, lpChRectsCopy){
+        if(rect.x < lastX)
+            color = Scalar(255, 0, 255);
+        rectangle(lp, rect, color);
+        lastX = rect.x;
+    }
+
+        Mat hHist, vHist;
+        reduce(lpAfterAT, hHist, 0, CV_REDUCE_AVG);
+        reduce(lpAfterAT, vHist, 1, CV_REDUCE_AVG);
+    ui->lpView->showImage(lp);
+    ui->hHistView->showImage(Utils::getHistImage(hHist, 0, 32));
+    ui->vHistView->showImage(Utils::getHistImage(vHist, 1, 32));
+    ui->lpBWView->showImage(lpAfterAT);
+
 }
 
 void MainWindow::goToFrame(int index)
@@ -361,10 +460,21 @@ void MainWindow::processCurrentFrame()
         // precise license plates rectangles
         lpRects = Utils::getLPRects(matchFilterThreshold, sobelThreshold, rectAreaThreshold, rectRatioThreshold);
 
+        for (int i=0;i<lpRects.size();i++)
+        {
+            detectedplate plate = detectedplate::detectedplate(lpRects[i],currentFrame);
+            int divisionPoint;
+            plate.characters = getPlateCharsAndProbabs(lpRects[i],divisionPoint);
+            plate.division=divisionPoint;
+            plate.computeProbab();
+            detection.AddPlate(plate);
+        }
+
+
         // license plate characters
         if(lpRects.size() > 0){
             currentLicensePlate = 0;
-            showCurrentLicensePlate();
+            showCurrentLicensePlate2();
         }
         else{
             currentLicensePlate = -1;

@@ -27,6 +27,7 @@ public:
     static QList<cv::Rect> getLPCharactersRects(const cv::Mat &lp, cv::Mat &lpAfterAT);
     static double getLPThreshold(const cv::Mat &lp, double leftMargin, double rightMargin);
     static char recognizeCharacter(const cv::Mat &character, const Patterns &patterns);
+    static QPair<char,double> recognizeCharacterWithProbab(const cv::Mat &character, const Patterns &patterns);
     static int makeOdd(int number);
 };
 

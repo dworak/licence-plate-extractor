@@ -6,6 +6,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "utils.h"
+#include "detectedframe.h"
 
 namespace Ui {
 class MainWindow;
@@ -61,6 +62,7 @@ private:
     int currentLicensePlate;
     Patterns patternsL, patternsR, patternsLR;
     QTimer *timer;
+    detectedframe detection;
 
     // parameters
     bool playing;
@@ -100,7 +102,8 @@ private:
 
     void drawLPRects();
     void showCurrentLicensePlate();
-
+    void showCurrentLicensePlate2();
+    QList<QPair<char,double> > getPlateCharsAndProbabs(cv::Rect plate, int& divisionPoint);
     void goToFrame(int index);
     void processCurrentFrame();
 };

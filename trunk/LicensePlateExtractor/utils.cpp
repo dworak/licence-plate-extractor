@@ -470,6 +470,27 @@ char Utils::recognizeCharacter(const cv::Mat &character, const Patterns &pattern
     return bestCh;
 }
 
+QPair<char,double> Utils::recognizeCharacterWithProbab(const cv::Mat &character, const Patterns &patterns)
+{
+    cv::Mat ch;
+    cv::resize(character, ch, cv::Size(47, 80));
+    cv::equalizeHist(ch, ch);
+    int minSum = 47 * 80 * 255 / 3;
+    char bestCh = '?';
+    for(Patterns::const_iterator it = patterns.begin(); it != patterns.end(); it++){
+        cv::Mat diff;
+        absdiff(ch, it.value(), diff);
+        int sum = cv::sum(diff)[0];
+        if(sum < minSum){
+            minSum = sum;
+            bestCh = it.key();
+        }
+    }
+    double probab = 1 - (double)minSum/(47*80*255/3);
+    QPair<char,double> best(bestCh,probab);
+    return best;
+}
+
 int Utils::makeOdd(int number)
 {
     return number % 2 == 0 ? number + 1 : number;
