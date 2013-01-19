@@ -502,6 +502,12 @@ QList<Rect> Utils::getLPCharactersRectsByHist(Mat &lp, Mat &lpAfterAT, Mat &hHis
         map.insert(rect.x, rect);
     rects = map.values();
 
+    // shift all 2 pixels right
+    for(int i=0; i < rects.size(); i++)
+        rects[i].x += 2;
+    if(rects.last().br().x >= lp.cols)
+        rects.last().width -= 2;
+
     // remove false left outermost rectangle if any
     if(rects.size() > 0){
         Rect &first = rects.first();
