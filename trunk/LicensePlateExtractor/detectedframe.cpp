@@ -60,7 +60,7 @@ void detectedframe::AddPlate(detectedplate plate)
                 plates[i].division = plate.division;
                 }
             }
-            else if ((plates[i].characters.size()==7 || plates[i].characters.size()==8) && plate.characters.size()<7)
+            else if ((plates[i].characters.size()==7 || plates[i].characters.size()==8) && plate.characters.size()!=7 && plate.characters.size()!=8)
             {}
             else if (plate.characters.size()>plates[i].characters.size())
             {
