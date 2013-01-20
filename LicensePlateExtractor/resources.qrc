@@ -47,4 +47,7 @@
     <qresource prefix="/font">
         <file alias="lpfont">font/arklatrs.ttf</file>
     </qresource>
+    <qresource prefix="/powiaty">
+        <file alias="powiaty">txt/powiaty.txt</file>
+    </qresource>
 </RCC>

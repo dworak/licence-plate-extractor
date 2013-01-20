@@ -336,34 +336,46 @@ QList<QPair<char,double> > MainWindow::getPlateCharsAndProbabs(cv::Rect plate, i
         if(lpChRects.size() < 7 || lpChRects.size() > 8){
             foreach(Rect r, lpChRects){
                 Mat ch = lp(r);
-                QPair <char,double> result = Utils::recognizeCharacterWithProbab(ch, patternsLR);
-                list.append((result));
+                CharRecognitionResult result = Utils::recognizeCharacterWithProbab(ch, patternsLR);
+                list.append(QPair<char, double>((result.end()-1).value(), (result.end()-1).key()));
             }
         }
         else if(lpChRects.size() == 7){
             divisionPoint = lpChRects[2].x - lpChRects[1].br().x > lpChRects[3].x - lpChRects[2].br().x ? 2 : 3;
+            QList<CharRecognitionResult> powiat;
             for(int i=0; i<divisionPoint; i++){
                 Mat ch = lp(lpChRects[i]);
-                QPair <char,double> result = Utils::recognizeCharacterWithProbab(ch, patternsL);
-                list.append((result));
+                CharRecognitionResult result = Utils::recognizeCharacterWithProbab(ch, patternsL);
+                powiat.append(result);
+                //list.append(QPair<char, double>((result.end()-1).value(), (result.end()-1).key()));
             }
+            QList<QPair<char, double> > recPow = Utils::recognizePowiat(powiat, powiaty);
+            list.append(recPow);
+            if(divisionPoint == 3 && recPow.size() == 2)
+                divisionPoint = 2;
             for(int i=divisionPoint; i<7; i++){
                 Mat ch = lp(lpChRects[i]);
-                QPair <char,double> result = Utils::recognizeCharacterWithProbab(ch, patternsR);
-                list.append((result));
+                CharRecognitionResult result = Utils::recognizeCharacterWithProbab(ch, patternsR);
+                list.append(QPair<char, double>((result.end()-1).value(), (result.end()-1).key()));
             }
         }
         else if(lpChRects.size() == 8){
             divisionPoint=3;
+            QList<CharRecognitionResult> powiat;
             for(int i=0; i<3; i++){
                 Mat ch = lp(lpChRects[i]);
-                QPair <char,double> result = Utils::recognizeCharacterWithProbab(ch, patternsL);
-                list.append((result));
+                CharRecognitionResult result = Utils::recognizeCharacterWithProbab(ch, patternsL);
+                powiat.append(result);
+                //list.append(QPair<char, double>((result.end()-1).value(), (result.end()-1).key()));
             }
+            QList<QPair<char, double> > recPow = Utils::recognizePowiat(powiat, powiaty);
+            list.append(recPow);
+            if(recPow.size() == 2)
+                divisionPoint = 2;
             for(int i=3; i<8; i++){
                 Mat ch = lp(lpChRects[i]);
-                QPair <char,double> result = Utils::recognizeCharacterWithProbab(ch, patternsR);
-                list.append((result));
+                CharRecognitionResult result = Utils::recognizeCharacterWithProbab(ch, patternsR);
+                list.append(QPair<char, double>((result.end()-1).value(), (result.end()-1).key()));
             }
         }
     }

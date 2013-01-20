@@ -25,7 +25,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>1000</width>
+         <width>1002</width>
          <height>208</height>
         </rect>
        </property>
@@ -651,8 +651,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>798</width>
-                <height>188</height>
+                <width>766</width>
+                <height>184</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout">
@@ -660,9 +660,7 @@
                 <widget class="CVImageWidget" name="lpBWView" native="true"/>
                </item>
                <item row="0" column="1">
-                <widget class="CVImageWidget" name="lpView" native="true">
-                 <zorder>bestrecognition</zorder>
-                </widget>
+                <widget class="CVImageWidget" name="lpView" native="true"/>
                </item>
                <item row="1" column="0">
                 <widget class="CVImageWidget" name="hHistView" native="true"/>
@@ -685,7 +683,7 @@
                  </property>
                 </widget>
                </item>
-               <item row="0" column="2">
+               <item row="0" column="2" rowspan="2">
                 <widget class="QLabel" name="bestrecognition">
                  <property name="text">
                   <string>TextLabel</string>
@@ -714,7 +712,7 @@
      <x>0</x>
      <y>0</y>
      <width>1022</width>
-     <height>18</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
