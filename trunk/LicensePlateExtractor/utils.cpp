@@ -463,8 +463,29 @@ QList<Rect> Utils::getLPCharactersRectsByHist(Mat &lp, Mat &lpAfterAT, Mat &hHis
     QList<Rect> rects = getLPChHRects(hHist, 20, lp.rows);
 
     // find rects vertically
-//    for(int i=0; i < rects.size(); i++)
-//        rects[i] = getLPChVRect(lpAfterAT(rects[i]), rects[i]);
+    for(int i=0; i < rects.size(); i++)
+        rects[i] = getLPChVRect(lpAfterAT(rects[i]), rects[i]);
+
+    // extend small heights
+    QList<int> tops, bottoms;
+    foreach(const cv::Rect &rect, rects){
+        tops.append(rect.y);
+        bottoms.append(rect.br().y);
+    }
+    qSort(tops);
+    qSort(bottoms);
+    int midTop, midBottom;
+    midTop = tops[(tops.size() - 1) / 2];
+    midBottom = bottoms[bottoms.size() / 2];
+    int margin = (midBottom - midTop) / 10;
+    for(int i=0; i < rects.size(); i++){
+        if(rects[i].y > midTop + margin){
+            rects[i].height += rects[i].y - midTop;
+            rects[i].y = midTop;
+        }
+        if(rects[i].br().y < midBottom - margin)
+            rects[i].height += midBottom - rects[i].br().y;
+    }
 
     // split too wide rects
     QList<Rect> afterSplit;
@@ -502,11 +523,20 @@ QList<Rect> Utils::getLPCharactersRectsByHist(Mat &lp, Mat &lpAfterAT, Mat &hHis
         map.insert(rect.x, rect);
     rects = map.values();
 
-    // shift all 2 pixels right
+    // shift all 1 pixel right (tmp!)
     for(int i=0; i < rects.size(); i++)
-        rects[i].x += 2;
-    if(rects.last().br().x >= lp.cols)
-        rects.last().width -= 2;
+        rects[i].x += 1;
+    if(rects.last().br().x > lp.cols)
+        rects.last().width -= 1;
+
+    // shift all 1 pixel down (tmp!)
+    for(int i=0; i < rects.size(); i++){
+        if(rects[i].height > 1){
+            rects[i].y += 1;
+            if(rects[i].br().y > lp.rows)
+                rects[i].height -= 1;
+        }
+    }
 
     // remove false left outermost rectangle if any
     if(rects.size() > 0){
@@ -646,25 +676,83 @@ char Utils::recognizeCharacter(const cv::Mat &character, const Patterns &pattern
     return bestCh;
 }
 
-QPair<char,double> Utils::recognizeCharacterWithProbab(const cv::Mat &character, const Patterns &patterns)
+QList<QPair<char, double> > Utils::recognizePowiat(const QList<CharRecognitionResult> &crr, const Powiaty &powiaty)
+{
+    int size = crr.size();
+    QList<int> ind;
+    QList<double> probs0, probs;
+    QString label;
+    qDebug() << size;
+    // initialize
+    for(int i=0; i < size; i++){
+        ind += 1;
+        label += (crr[i].end() - 1).value();
+        probs0.append((crr[i].end() - 1).key());
+        probs.append(probs0[i]);
+    }
+
+    // find best
+    if(size == 2){
+        int counter = 0;
+        int counterMaxVal = 20;
+        while(!powiaty.existsInTwo(label) && counter < counterMaxVal){
+            // find char to replace
+            double diff0, diff1;
+            diff0 = probs0[0] - (crr[0].end() - ind[0] - 1).key();
+            diff1 = probs0[1] - (crr[1].end() - ind[1] - 1).key();
+            int rep = diff0 < diff1 ? 0 : 1;
+
+            // replace
+            ind[rep]++;
+            probs[rep] = (crr[rep].end() - ind[rep]).key();
+            label[rep] = (crr[rep].end() - ind[rep]).value();
+        }
+        if(counter == counterMaxVal)
+            label = "??";
+    }
+    else if(size == 3){
+        int counter = 0;
+        int counterMaxVal = 10;
+        while(!powiaty.existsInThree(label) && counter < counterMaxVal){
+            // find char to replace
+            QMultiMap<double, int> diffs;
+            for(int i=0; i<3; i++)
+                diffs.insert(probs0[i] - (crr[i].end() - ind[i] - 1).key(), i);
+            int rep = diffs.values().first();
+
+            // replace
+            ind[rep]++;
+            probs[rep] = (crr[rep].end() - ind[rep]).key();
+            label[rep] = (crr[rep].end() - ind[rep]).value();
+
+            counter++;
+        }
+
+        if(counter == counterMaxVal)
+            return recognizePowiat(crr.mid(1), powiaty);
+    }
+
+    // prepare result
+    QList<QPair<char, double> > result;
+    for(int i=0; i < size; i++)
+        result.append(QPair<char, double>(label.at(i).toAscii(), probs[i]));
+
+    return result;
+}
+
+CharRecognitionResult Utils::recognizeCharacterWithProbab(const cv::Mat &character, const Patterns &patterns)
 {
     cv::Mat ch;
+    CharRecognitionResult result;
     cv::resize(character, ch, cv::Size(47, 80));
     cv::equalizeHist(ch, ch);
-    int minSum = 47 * 80 * 255 / 3;
-    char bestCh = '?';
     for(Patterns::const_iterator it = patterns.begin(); it != patterns.end(); it++){
         cv::Mat diff;
         absdiff(ch, it.value(), diff);
         int sum = cv::sum(diff)[0];
-        if(sum < minSum){
-            minSum = sum;
-            bestCh = it.key();
-        }
+        result.insert(1 - (double)sum/(47*80*255), it.key());
     }
-    double probab = 1 - (double)minSum/(47*80*255/3);
-    QPair<char,double> best(bestCh,probab);
-    return best;
+    return result;
 }
 
 int Utils::makeOdd(int number)

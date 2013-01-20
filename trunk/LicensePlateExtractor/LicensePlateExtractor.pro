@@ -14,13 +14,17 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     utils.cpp \
     detectedframe.cpp \
-    detectedplate.cpp
+    detectedplate.cpp \
+    powiaty.cpp \
+    charrecognitionresult.cpp
 
 HEADERS  += mainwindow.h \
     utils.h \
     cvimagewidget.h \
     detectedframe.h \
-    detectedplate.h
+    detectedplate.h \
+    powiaty.h \
+    charrecognitionresult.h
 
 FORMS    += mainwindow.ui
 

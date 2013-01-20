@@ -5,8 +5,9 @@
 
 #include <opencv2/opencv.hpp>
 
-#include "utils.h"
 #include "detectedframe.h"
+#include "powiaty.h"
+#include "utils.h"
 
 namespace Ui {
 class MainWindow;
@@ -60,6 +61,7 @@ private:
     QList<cv::Rect> lpRects;
     int currentLicensePlate;
     Patterns patternsL, patternsR, patternsLR;
+    Powiaty powiaty;
     QTimer *timer;
     detectedframe detection;
 
