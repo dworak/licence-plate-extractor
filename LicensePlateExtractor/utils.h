@@ -33,8 +33,8 @@ public:
     static cv::Rect getLPChVRect(const cv::Mat &ch, const cv::Rect &rect);
     static double getLPThreshold(const cv::Mat &lp, double leftMargin, double rightMargin);
     static char recognizeCharacter(const cv::Mat &character, const Patterns &patterns);
-    static QList< QPair<char, double > > recognizePowiat(const QList<CharRecognitionResult> &crr, const Powiaty &powiaty);
     static CharRecognitionResult recognizeCharacterWithProbab(const cv::Mat &character, const Patterns &patterns);
+    static QList< QPair<char, double > > recognizePowiat(const QList<CharRecognitionResult> &crr, const Powiaty &powiaty);
     static int makeOdd(int number);
 };
 
