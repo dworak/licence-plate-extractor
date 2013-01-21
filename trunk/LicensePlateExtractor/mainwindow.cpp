@@ -404,7 +404,14 @@ void MainWindow::showCurrentLicensePlate2()
         lpChRects = map.values();
     QString bestrekogn = plate.toString();
     //qDebug() <<recognizedCharacters;
-    ui->bestrecognition->setText(bestrekogn);
+    if (plate.characters.size()==7 || plate.characters.size()==8)
+    {
+        ui->bestrecognition->setText(bestrekogn);
+    }
+    else
+    {
+        ui->bestrecognition->setText("");
+    }
 
 
 
@@ -549,6 +556,7 @@ void MainWindow::processCurrentFrame()
             ui->lpBWView->clear();
             ui->hHistView->clear();
             ui->recognizedText->setText("");
+            ui->bestrecognition->setText("");
         }
 
         drawLPRects();
@@ -694,6 +702,7 @@ void MainWindow::on_stop_clicked()
     ui->playPause->setIcon(QIcon(":/icon/play"));
     ui->open->setEnabled(true);
     goToFrame(0);
+    detection.clear();
 }
 
 void MainWindow::on_open_clicked()
@@ -710,6 +719,7 @@ void MainWindow::on_open_clicked()
         ui->totalFrames->setText(QString::number(frameCount));
 
         goToFrame(0);
+        detection.clear();
     }
 }
 

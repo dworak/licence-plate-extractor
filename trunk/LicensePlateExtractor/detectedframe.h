@@ -9,6 +9,7 @@ class detectedframe
 public:
     detectedframe();
     void AddPlate(detectedplate plate);
+    void clear();
     detectedplate GetPlate(cv::Rect rect, int frame);
     QList<detectedplate> plates;
 };

@@ -33,6 +33,15 @@ void detectedframe::AddPlate(detectedplate plate)
                         {
                             plates[i].characters[j] = plate.characters[j];
                         }
+                        //testowo
+                        else
+                        {
+                            plates[i].characters[j].second*=0.99;
+                        }
+                    }
+                    else if (plates[i].characters[j].second<plate.characters[j].second)
+                    {
+                        plates[i].characters[j].second=plate.characters[j].second;
                     }
                 }
 
@@ -95,6 +104,11 @@ detectedplate detectedframe::GetPlate(cv::Rect rect, int frame)
         }
     }
     return plate;
+}
+
+void detectedframe::clear()
+{
+    plates.clear();
 }
 
 
