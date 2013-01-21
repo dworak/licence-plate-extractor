@@ -462,109 +462,168 @@ QList<Rect> Utils::getLPCharactersRectsByHist(Mat &lp, Mat &lpAfterAT, Mat &hHis
     // find rects horizontally
     QList<Rect> rects = getLPChHRects(hHist, 20, lp.rows);
 
-    // find rects vertically
-    for(int i=0; i < rects.size(); i++)
-        rects[i] = getLPChVRect(lpAfterAT(rects[i]), rects[i]);
+    if(rects.size() > 1){
+        // find rects vertically
+        for(int i=0; i < rects.size(); i++)
+            rects[i] = getLPChVRect(lpAfterAT(rects[i]), rects[i]);
 
-    // extend small heights
-    QList<int> tops, bottoms;
-    foreach(const cv::Rect &rect, rects){
-        tops.append(rect.y);
-        bottoms.append(rect.br().y);
-    }
-    qSort(tops);
-    qSort(bottoms);
-    int midTop, midBottom;
-    midTop = tops[(tops.size() - 1) / 2];
-    midBottom = bottoms[bottoms.size() / 2];
-    int margin = (midBottom - midTop) / 10;
-    for(int i=0; i < rects.size(); i++){
-        if(rects[i].y > midTop + margin){
-            rects[i].height += rects[i].y - midTop;
-            rects[i].y = midTop;
+        // remove rectangles with very low top y or very high bottom y
+        QList<int> topsHigh, bottomsHigh;
+            foreach(const cv::Rect &rect, rects){
+                topsHigh.append(rect.y);
+                bottomsHigh.append(rect.br().y);
+            }
+            qSort(topsHigh);
+            qSort(bottomsHigh);
+            int midTopHigh, midBottomHigh;
+            midTopHigh = topsHigh[(topsHigh.size() - 1) / 2];
+            midBottomHigh = bottomsHigh[bottomsHigh.size() / 2];
+            int marginHigh = (midBottomHigh - midTopHigh) / 10;
+            for(int i=0; i < rects.size(); i++)
+                if(rects[i].y < midTopHigh - marginHigh || rects[i].br().y > midBottomHigh + marginHigh)
+                    rects.removeAt(i);
+
+        // extend small heights
+        QList<int> tops, bottoms;
+        foreach(const cv::Rect &rect, rects){
+            tops.append(rect.y);
+            bottoms.append(rect.br().y);
         }
-        if(rects[i].br().y < midBottom - margin)
-            rects[i].height += midBottom - rects[i].br().y;
-    }
-
-    // split too wide rects
-    QList<Rect> afterSplit;
-    QList<int> widths;
-    for(int i=0; i < rects.size(); i++)
-        widths.append(rects[i].width);
-    qSort(widths);
-    int midWidth = widths[widths.size() / 2];
-    for(int i=0; i < rects.size(); i++)
-        if(rects[i].width > 1.3 * midWidth){
-            Mat hist = hHist(Range::all(), Range(rects[i].x, rects[i].x + rects[i].width));
-            QList<Rect> newRects;
-            int shift = 20;
-            do{
-                shift += 1;
-                newRects = getLPChHRects(hist, shift, lp.rows);
-            }while(newRects.size() <= 1 && shift < 50);
-
-            // shift new rects
-            for(int j=0; j < newRects.size(); j++)
-                newRects[j].x += rects[i].x;
-            afterSplit.append(newRects);
-            rects.removeAt(i);
+        qSort(tops);
+        qSort(bottoms);
+        int midTop, midBottom;
+        midTop = tops[(tops.size() - 1) / 2];
+        midBottom = bottoms[bottoms.size() / 2];
+        int margin = (midBottom - midTop) / 10;
+        for(int i=0; i < rects.size(); i++){
+            if(rects[i].y > midTop + margin){
+                rects[i].height += rects[i].y - midTop;
+                rects[i].y = midTop;
+            }
+            if(rects[i].br().y < midBottom - margin)
+                rects[i].height += midBottom - rects[i].br().y;
         }
-    rects.append(afterSplit);
 
-    // remove too narrow rects
-    for(int i=0; i < rects.size(); i++)
-        if(rects[i].width < 0.5 * midWidth)
-            rects.removeAt(i);
+        // split too wide rects
+        QList<Rect> afterSplit;
+        QList<int> widths;
+        for(int i=0; i < rects.size(); i++)
+            widths.append(rects[i].width);
+        qSort(widths);
+        int midWidth = widths[widths.size() / 2];
+        for(int i=0; i < rects.size(); i++)
+            if(rects[i].width > 1.3 * midWidth){
+    //            Mat hist = hHist(Range::all(), Range(rects[i].x, rects[i].x + rects[i].width));
+    //            QList<Rect> newRects;
+    //            int shift = 20;
+    //            do{
+    //                shift += 1;
+    //                newRects = getLPChHRects(hist, shift, lp.rows);
+    //            }while(newRects.size() <= 1 && shift < 50);
 
-    // sort rects
-    QMap<int, cv::Rect> map;
-    foreach(const cv::Rect &rect, rects)
-        map.insert(rect.x, rect);
-    rects = map.values();
+    //            // shift new rects
+    //            for(int j=0; j < newRects.size(); j++)
+    //                newRects[j].x += rects[i].x;
+    //            afterSplit.append(newRects);
+    //            rects.removeAt(i);
 
-    // shift all 1 pixel right (tmp!)
-    for(int i=0; i < rects.size(); i++)
-        rects[i].x += 1;
-    if(rects.last().br().x > lp.cols)
-        rects.last().width -= 1;
+                int n = rects[i].width / (0.85 * midWidth);
+                int newWidth = rects[i].width / n - 1;
+                for(int j=0; j < n; j++)
+                    afterSplit.append(Rect(rects[i].x + j * newWidth, rects[i].y, newWidth, rects[i].height));
+                rects.removeAt(i);
+            }
+        rects.append(afterSplit);
 
-    // shift all 1 pixel down (tmp!)
-    for(int i=0; i < rects.size(); i++){
-        if(rects[i].height > 1){
-            rects[i].y += 1;
-            if(rects[i].br().y > lp.rows)
-                rects[i].height -= 1;
+        // remove too narrow rects
+        for(int i=0; i < rects.size(); i++)
+            if(rects[i].width < 0.5 * midWidth)
+                rects.removeAt(i);
+
+        // sort rects
+        QMap<int, cv::Rect> map;
+        foreach(const cv::Rect &rect, rects)
+            map.insert(rect.x, rect);
+        rects = map.values();
+
+        // extend small widths
+        for(int i=0; i < rects.size(); i++){
+            if((double)rects[i].width / rects[i].height < 0.5){
+                if (i==rects.size()-1 || rects[i+1].x-(rects[i].x+rects[i].width)>2 || (double)rects[i].width / rects[i].height >=0.55)
+                {
+                    int newWidth = 0.5875 * rects[i].height;
+                    rects[i].x = rects[i].x - (newWidth - rects[i].width) / 2;
+                    rects[i].width = newWidth;
+                    if(rects[i].x < 0){
+                        rects[i].width += rects[i].x;
+                        rects[i].x = 0;
+                    }
+                    if(rects[i].br().x > lp.cols)
+                        rects[i].width -= rects[i].br().x - lp.cols;
+                }
+                else
+                {
+                    rects[i].width = rects[i+1].x+rects[i+1].width - rects[i].x;
+                    if (rects[i+1].y<rects[i].y)
+                    {
+                        rects[i].height = rects[i].height + rects[i].y - rects[i+1].y;
+                        rects[i].y =  rects[i+1].y;
+                    }
+                    if (rects[i+1].y+rects[i+1].height>rects[i].y+rects[i].height)
+                        rects[i].height = rects[i+1].y+rects[i+1].height-rects[i].y;
+                }
+            }
         }
-    }
 
-    // remove false left outermost rectangle if any
-    if(rects.size() > 0){
-        Rect &first = rects.first();
-        Mat roi = lp(first);
-        roi = roi(cv::Range(0, roi.rows / 2), cv::Range::all());
-        Scalar roiMean, lpMean, sd;
-        meanStdDev(roi, roiMean, sd);
-        meanStdDev(lp, lpMean, sd);
-        if(roiMean[0] < 0.8 * lpMean[0])
+        // shift all 1 pixel right (tmp!)
+        for(int i=0; i < rects.size(); i++)
+            rects[i].x += 1;
+        if(rects.last().br().x > lp.cols)
+            rects.last().width -= 1;
+
+        // shift all 1 pixel down (tmp!)
+        for(int i=0; i < rects.size(); i++){
+            if(rects[i].height > 1){
+                rects[i].y += 1;
+                if(rects[i].br().y > lp.rows)
+                    rects[i].height -= 1;
+            }
+        }
+
+        // remove false left outermost rectangle if any
+        if(rects.size() > 0){
+            Rect &first = rects.first();
+            Mat roi = lp(first);
+            roi = roi(cv::Range(0, roi.rows / 2), cv::Range::all());
+            Scalar roiMean, lpMean, sd;
+            meanStdDev(roi, roiMean, sd);
+            meanStdDev(lp, lpMean, sd);
+            if(roiMean[0] < 0.8 * lpMean[0])
+                rects.removeFirst();
+        }
+
+        // find widest space
+        int spaceWidth = 0, spacePos;
+        for(int i=0; i < rects.size() - 1; i++){
+            int width = rects[i + 1].x - rects[i].br().x;
+            if(width > spaceWidth){
+                spaceWidth = width;
+                spacePos = i;
+            }
+        }
+
+        // once again remove false left outermost rectangle if any
+        if(spacePos == 3)
             rects.removeFirst();
+
+        // remove false rects on the right
+        while(rects.size() > spacePos + 6)
+            rects.removeLast();
+
+        return rects;
     }
-
-    // find widest space
-    int spaceWidth = 0, spacePos;
-    for(int i=0; i < rects.size() - 1; i++){
-        int width = rects[i + 1].x - rects[i].br().x;
-        if(width > spaceWidth){
-            spaceWidth = width;
-            spacePos = i;
-        }
-    }
-
-    // remove false rects on the right
-    while(rects.size() > spacePos + 6)
-        rects.removeLast();
-
-    return rects;
+    else    // rects number < 2
+        return QList<Rect>();
 }
 
 QList<Rect> Utils::getLPChHRects(const Mat &hHist, int thres, int lpHeight)
@@ -682,7 +741,7 @@ QList<QPair<char, double> > Utils::recognizePowiat(const QList<CharRecognitionRe
     QList<int> ind;
     QList<double> probs0, probs;
     QString label;
-    qDebug() << size;
+
     // initialize
     for(int i=0; i < size; i++){
         ind += 1;
@@ -711,8 +770,11 @@ QList<QPair<char, double> > Utils::recognizePowiat(const QList<CharRecognitionRe
             label = "??";
     }
     else if(size == 3){
+        if(probs0[0] < 0.5 * (probs0[1] + probs0[2]) * 0.5)
+            return recognizePowiat(crr.mid(1), powiaty);
+
         int counter = 0;
-        int counterMaxVal = 10;
+        int counterMaxVal = 20;
         while(!powiaty.existsInThree(label) && counter < counterMaxVal){
             // find char to replace
             QMultiMap<double, int> diffs;
