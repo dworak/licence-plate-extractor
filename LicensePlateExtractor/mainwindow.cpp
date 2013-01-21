@@ -46,6 +46,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->recognizedText->setText("");
     ui->recognizedText->setFont(QFont("arklas Tablica samochodowa", 18));
     ui->bestrecognition->setFont(QFont("arklas Tablica samochodowa", 24));
+    ui->bestrecognition->setText("");
     leftView = PLATE_LOCALIZATION;
     rightView = ORIGINAL;
 
