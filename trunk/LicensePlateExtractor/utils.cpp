@@ -717,22 +717,78 @@ double Utils::getLPThreshold(const cv::Mat &lp, double leftMargin, double rightM
 
 char Utils::recognizeCharacter(const cv::Mat &character, const Patterns &patterns)
 {
+//    cv::Mat ch;
+//    cv::resize(character, ch, cv::Size(47, 80));
+//    cv::equalizeHist(ch, ch);
+//    int minSum = 47 * 80 * 255 / 3;
+//    char bestCh = '?';
+//    for(Patterns::const_iterator it = patterns.begin(); it != patterns.end(); it++){
+//        cv::Mat diff;
+//        absdiff(ch, it.value(), diff);
+//        int sum = cv::sum(diff)[0];
+//        if(sum < minSum){
+//            minSum = sum;
+//            bestCh = it.key();
+//        }
+//    }
+
+//    return bestCh;
+    return (recognizeCharacterWithProbab(character, patterns).end() - 1).value();
+}
+
+CharRecognitionResult Utils::recognizeCharacterWithProbab(const cv::Mat &character, const Patterns &patterns)
+{
     cv::Mat ch;
+    CharRecognitionResult result;
     cv::resize(character, ch, cv::Size(47, 80));
     cv::equalizeHist(ch, ch);
-    int minSum = 47 * 80 * 255 / 3;
-    char bestCh = '?';
     for(Patterns::const_iterator it = patterns.begin(); it != patterns.end(); it++){
         cv::Mat diff;
         absdiff(ch, it.value(), diff);
         int sum = cv::sum(diff)[0];
-        if(sum < minSum){
-            minSum = sum;
-            bestCh = it.key();
-        }
-    }
+        double probab = 1 - (double)sum/(47*80*255);
 
-    return bestCh;
+        // special cases
+        switch(it.key()){
+        case '0':
+            probab += 0.01; break;
+        case '8':
+            probab -= 0.01; break;
+
+        case '1':
+            probab += 0.01; break;
+
+        case '5':
+            probab += 0.006; break;
+        case 'S':
+            probab -= 0.008; break;
+
+        case 'W':
+            probab -= 0.02; break;
+
+        case 'A':
+            probab -= 0.01; break;
+
+        case 'L':
+            probab += 0.01; break;
+
+        case '7':
+            probab += 0.01; break;
+        case 'Z':
+            probab -= 0.01; break;
+
+        case 'J':
+            probab += 0.03; break;
+        }
+
+        if(probab < 0)
+            probab = 0;
+        else if(probab > 1)
+            probab = 1;
+
+        result.insert(probab, it.key());
+    }
+    return result;
 }
 
 QList<QPair<char, double> > Utils::recognizePowiat(const QList<CharRecognitionResult> &crr, const Powiaty &powiaty)
@@ -799,21 +855,6 @@ QList<QPair<char, double> > Utils::recognizePowiat(const QList<CharRecognitionRe
     for(int i=0; i < size; i++)
         result.append(QPair<char, double>(label.at(i).toAscii(), probs[i]));
 
-    return result;
-}
-
-CharRecognitionResult Utils::recognizeCharacterWithProbab(const cv::Mat &character, const Patterns &patterns)
-{
-    cv::Mat ch;
-    CharRecognitionResult result;
-    cv::resize(character, ch, cv::Size(47, 80));
-    cv::equalizeHist(ch, ch);
-    for(Patterns::const_iterator it = patterns.begin(); it != patterns.end(); it++){
-        cv::Mat diff;
-        absdiff(ch, it.value(), diff);
-        int sum = cv::sum(diff)[0];
-        result.insert(1 - (double)sum/(47*80*255), it.key());
-    }
     return result;
 }
 
