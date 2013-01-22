@@ -842,7 +842,7 @@ QList<QPair<char, double> > Utils::recognizePowiat(const QList<CharRecognitionRe
             return recognizePowiat(crr.mid(1), powiaty);
 
         int counter = 0;
-        int counterMaxVal = 20;
+        int counterMaxVal = 10;
         while(!powiaty.existsInThree(label) && counter < counterMaxVal){
             // find char to replace
             QMultiMap<double, int> diffs;

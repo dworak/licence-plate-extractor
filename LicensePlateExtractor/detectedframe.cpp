@@ -53,9 +53,14 @@ void detectedframe::AddPlate(detectedplate plate)
                     }
                     else if (plate.division!=-1)
                     {
-                        if (plate.characters.size()>plates[i].characters.size() /*&& plate.getDivisionProbab()>plates[i].getDivisionProbab()-0.1*/)
-                        {
+                        //if (plate.characters.size()>plates[i].characters.size() /*&& plate.getDivisionProbab()>plates[i].getDivisionProbab()-0.1*/)
+                        //if (plate.probab>plates[i].probab)
+                        //{
                             plates[i].division = plate.division;
+                        //}
+                        if (QChar(plates[i].characters[2].first).isDigit())
+                        {
+                            plates[i].division =2;
                         }
                     }
                 }
@@ -76,9 +81,24 @@ void detectedframe::AddPlate(detectedplate plate)
                 plates[i].characters = plate.characters;
                 plates[i].division = plate.division;
             }
-
             plates[i].computeProbab();
             flag=true;
+/*            if (plate.division==3)
+            {
+                plates[i].divtest+=1;
+            }
+            else if (plate.division==2)
+            {
+                plates[i].divtest--;
+            }
+            if (plates[i].divtest>0)
+            {
+                plates[i].division=3;
+            }
+            else
+            {
+                plates[i].division=2;
+            }*/
         }
     }
     if (!flag)
@@ -89,6 +109,14 @@ void detectedframe::AddPlate(detectedplate plate)
 //            qDebug() << plate.characters[j].first << " " << plate.characters[j].second;
 
 //        }
+    /*    if (plate.division==3)
+        {
+            plate.divtest = 1;
+        }
+        else
+        {
+            plate.divtest=0;
+        }*/
         plates.append(plate);
     }
 }
