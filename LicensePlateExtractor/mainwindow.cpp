@@ -546,7 +546,6 @@ void MainWindow::processCurrentFrame()
             detection.AddPlate(plate);
         }
 
-        ui->platesList->clear();
         QMap<QString, int> si;
         QMap<int, QString> is;
         for(int i=detection.plates.size()-1; i >= 0; i--){
@@ -557,6 +556,7 @@ void MainWindow::processCurrentFrame()
         for(QMap<QString, int>::iterator it = si.begin(); it != si.end(); it++)
             is.insert(it.value(), it.key());
         QList<QString> all = is.values();
+        ui->platesList->clear();
         foreach(const QString &str, all)
             ui->platesList->addItem(str);
 
