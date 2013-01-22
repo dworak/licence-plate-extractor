@@ -779,6 +779,18 @@ CharRecognitionResult Utils::recognizeCharacterWithProbab(const cv::Mat &charact
 
         case 'J':
             probab += 0.03; break;
+
+        case 'C':
+            probab += 0.02; break;
+
+        case  'B':
+            probab -= 0.01; break;
+
+        case 'K':
+            probab -= 0.01; break;
+
+        case 'X':
+            probab -= 0.01; break;
         }
 
         if(probab < 0)

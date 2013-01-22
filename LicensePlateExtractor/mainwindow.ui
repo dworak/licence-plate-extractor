@@ -26,7 +26,7 @@
          <x>0</x>
          <y>0</y>
          <width>1002</width>
-         <height>208</height>
+         <height>181</height>
         </rect>
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -652,7 +652,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>766</width>
-                <height>184</height>
+                <height>211</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout">
@@ -696,6 +696,16 @@
               </layout>
              </widget>
             </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="tab_3">
+          <attribute name="title">
+           <string>All license plates</string>
+          </attribute>
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <item>
+            <widget class="QListWidget" name="platesList"/>
            </item>
           </layout>
          </widget>

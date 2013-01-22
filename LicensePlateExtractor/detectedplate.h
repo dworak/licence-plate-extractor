@@ -11,7 +11,7 @@ class detectedplate
 public:
     detectedplate();
     detectedplate(cv::Rect rect,int frame);
-    QString toString();
+    QString toString() const;
     bool match(detectedplate plate);
     double getDivisionProbab();
     cv::Rect plateRect;
