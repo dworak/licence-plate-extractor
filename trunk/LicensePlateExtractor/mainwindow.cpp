@@ -62,6 +62,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->currentFrame->setMaximum(frameCount);
     ui->playerSlider->setMaximum(frameCount);
     ui->totalFrames->setText(QString::number(frameCount));
+    QStringList list;
 
     goToFrame(0);
 }
@@ -545,6 +546,19 @@ void MainWindow::processCurrentFrame()
             detection.AddPlate(plate);
         }
 
+        ui->platesList->clear();
+        QMap<QString, int> si;
+        QMap<int, QString> is;
+        for(int i=detection.plates.size()-1; i >= 0; i--){
+            QString s = detection.plates[i].toString();
+            if(s.size() >= 8 && s.size() <= 9)
+                si.insert(s, i);
+        }
+        for(QMap<QString, int>::iterator it = si.begin(); it != si.end(); it++)
+            is.insert(it.value(), it.key());
+        QList<QString> all = is.values();
+        foreach(const QString &str, all)
+            ui->platesList->addItem(str);
 
         // license plate characters
         if(lpRects.size() > 0){
@@ -704,6 +718,7 @@ void MainWindow::on_stop_clicked()
     ui->open->setEnabled(true);
     goToFrame(0);
     detection.clear();
+    ui->platesList->clear();
 }
 
 void MainWindow::on_open_clicked()
@@ -721,6 +736,7 @@ void MainWindow::on_open_clicked()
 
         goToFrame(0);
         detection.clear();
+        ui->platesList->clear();
     }
 }
 
