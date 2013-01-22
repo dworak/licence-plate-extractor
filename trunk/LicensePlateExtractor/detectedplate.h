@@ -20,6 +20,7 @@ public:
     int division;
     void computeProbab();
     double probab;
+   // int divtest;
 };
 
 #endif // DETECTEDPLATE_H
