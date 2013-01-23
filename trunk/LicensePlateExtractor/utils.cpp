@@ -58,23 +58,23 @@ void Utils::preparePatterns(Patterns &patterns, CharacterSubset characterSubset)
 
 cv::Mat Utils::getMatchFilterKernel(int m, int n, double sd, double A, double B)
 {
-    cv::Mat result(m, n, CV_64F);
+    cv::Mat result(m, n, CV_32F);
     double variance = sd * sd;
     double mm = m - 1;
 
     for(int x=0; x<m; x++){
-        double val;
+        float val;
         if(x < mm / 3 || x > 2 * mm / 3){
-            double trans = x < mm / 3 ? mm / 4 : mm / 4 * 3;
-            double xTrans = x - trans;
+            float trans = x < mm / 3 ? mm / 4 : mm / 4 * 3;
+            float xTrans = x - trans;
             val = A * exp(- xTrans * xTrans / (0.2 * variance));
         }
         else{
-            double xTrans = x - mm / 2;
+            float xTrans = x - mm / 2;
             val = B * exp(- xTrans * xTrans / (2 * variance));
         }
         for(int y=0; y<n; y++)
-            result.at<double>(x, y) = val;
+            result.at<float>(x, y) = val;
     }
 
     return result;
