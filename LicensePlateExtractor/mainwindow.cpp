@@ -538,7 +538,7 @@ void MainWindow::processCurrentFrame()
 
         for (int i=0;i<lpRects.size();i++)
         {
-            detectedplate plate = detectedplate::detectedplate(lpRects[i],currentFrame);
+            detectedplate plate = detectedplate(lpRects[i],currentFrame);
             int divisionPoint;
             plate.characters = getPlateCharsAndProbabs(lpRects[i],divisionPoint);
             plate.division=divisionPoint;
