@@ -1,0 +1,1 @@
+Projekt na Systemy wizyjne, którego celem jest ekstrakcja widoków tablic rejestracyjnych z sekwencji wideo.
